@@ -25,14 +25,14 @@ find_package(spdlog CONFIG REQUIRED)
 message("Adding executable: ${PISUBMARINE_MODULE_NAME}.App")
 add_executable(${PISUBMARINE_MODULE_NAME}.App
         PiSubmarine/Operator/Station/main.cpp
+        PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.cpp
+        PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.h
         PiSubmarine/Operator/Station/Qt/StationApp.cpp
         PiSubmarine/Operator/Station/Qt/StationApp.h
-        PiSubmarine/Operator/Station/Qt/VideoItem.cpp
-        PiSubmarine/Operator/Station/Qt/VideoItem.h
+        PiSubmarine/Operator/Station/Qt/VideoSurfaceItem.cpp
+        PiSubmarine/Operator/Station/Qt/VideoSurfaceItem.h
         PiSubmarine/Operator/Station/Qt/VideoRuntimeWorker.cpp
         PiSubmarine/Operator/Station/Qt/VideoRuntimeWorker.h
-        PiSubmarine/Operator/Station/Qt/VideoTailFactory.cpp
-        PiSubmarine/Operator/Station/Qt/VideoTailFactory.h
         PiSubmarine/Operator/Station/Qt/qml.qrc)
 PiSubmarineInitTarget(${PISUBMARINE_MODULE_NAME}.App)
 

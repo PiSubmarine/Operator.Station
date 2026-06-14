@@ -4,8 +4,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include "PiSubmarine/Operator/Station/Qt/VideoTailFactory.h"
-
 namespace PiSubmarine::Operator::Station::Qt
 {
     VideoRuntimeWorker::VideoRuntimeWorker(
@@ -14,7 +12,7 @@ namespace PiSubmarine::Operator::Station::Qt
         Lease::Api::ILeaseIssuer& leaseIssuer,
         ::PiSubmarine::Video::Subscription::Api::IService& subscriptionService,
         std::shared_ptr<Video::IPipelineBuilder> pipelineBuilder,
-        VideoTailFactory& tailFactory,
+        Video::IVideoPipelineTailFactory& tailFactory,
         QObject* parent)
         : QObject(parent)
         , m_Config(std::move(config))

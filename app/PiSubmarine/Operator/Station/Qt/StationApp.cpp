@@ -9,22 +9,28 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QGuiApplication>
+#include <QQuickItem>
 #include <QQmlApplicationEngine>
 #include <QUrl>
-#include <qqml.h>
 
+#include <gst/gst.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
-#include "PiSubmarine/Operator/Station/Qt/VideoItem.h"
+#include "PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.h"
 #include "PiSubmarine/Operator/Station/Qt/VideoRuntimeWorker.h"
 #include "PiSubmarine/Operator/Station/Video/Config.h"
 #include "PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h"
 #include "PiSubmarine/Operator/Station/Video/RtpPipelineBuilder.h"
 #include "PiSubmarine/Video/Subscription/Api/IService.h"
+
+namespace PiSubmarine::Operator::Station::Video
+{
+    void RegisterStaticPlugins(const std::shared_ptr<spdlog::logger>& logger);
+}
 
 namespace PiSubmarine::Operator::Station::Qt
 {
@@ -109,6 +115,41 @@ namespace PiSubmarine::Operator::Station::Qt
             ::PiSubmarine::Video::Subscription::Api::SubscribeRequest m_LastRequest{};
             Lease::Api::LeaseId m_LastLeaseId{};
         };
+
+        bool EnsureGstreamerReadyForQml(const std::shared_ptr<spdlog::logger>& logger)
+        {
+            GError* error = nullptr;
+            if (!gst_is_initialized() && !gst_init_check(nullptr, nullptr, &error))
+            {
+                if (logger && error != nullptr)
+                {
+                    logger->error("gst_init_check failed while preparing QML video item: {}", error->message);
+                }
+
+                if (error != nullptr)
+                {
+                    g_error_free(error);
+                }
+
+                return false;
+            }
+
+            Video::RegisterStaticPlugins(logger);
+
+#if defined(_WIN32)
+            if (auto* warmupSink = gst_element_factory_make("qml6d3d11sink", nullptr))
+            {
+                gst_object_unref(GST_OBJECT(warmupSink));
+            }
+            else if (logger)
+            {
+                logger->error("Failed to warm up qml6d3d11sink before QML load");
+                return false;
+            }
+#endif
+
+            return true;
+        }
     }
 
     bool StationApp::ConfigureCommandLine(QGuiApplication& application, QCommandLineParser& parser) const
@@ -124,14 +165,25 @@ namespace PiSubmarine::Operator::Station::Qt
 
     bool StationApp::LoadMainWindow()
     {
-        qmlRegisterType<VideoItem>("PiSubmarine.Operator.Station", 1, 0, "VideoItem");
-        m_Engine.load(QUrl("qrc:/PiSubmarine/Operator/Station/qml/Main.qml"));
+        if (!EnsureGstreamerReadyForQml(m_Logger))
+        {
+            return false;
+        }
+
+        const QUrl mainWindowUrl(
+#if defined(_WIN32)
+            "qrc:/PiSubmarine/Operator/Station/qml/Main.Windows.qml"
+#else
+            "qrc:/PiSubmarine/Operator/Station/qml/Main.qml"
+#endif
+        );
+        m_Engine.load(mainWindowUrl);
         if (m_Engine.rootObjects().isEmpty())
         {
             return false;
         }
 
-        m_VideoItem = m_Engine.rootObjects().front()->findChild<VideoItem*>("videoSurface");
+        m_VideoItem = m_Engine.rootObjects().front()->findChild<QQuickItem*>("videoSurface");
         return m_VideoItem != nullptr;
     }
 
@@ -157,20 +209,7 @@ namespace PiSubmarine::Operator::Station::Qt
                 ? Video::CreateFakePipelineBuilder(loggerFactory)
                 : Video::CreateRtpPipelineBuilder(loggerFactory);
 
-        QObject::connect(&m_TailFactory, &VideoTailFactory::FrameReady, m_VideoItem, [this](const QImage&)
-        {
-            if (!m_HasReceivedFirstFrame && m_Logger)
-            {
-                m_HasReceivedFirstFrame = true;
-                m_Logger->info("First video frame received");
-            }
-        });
-        QObject::connect(
-            &m_TailFactory,
-            &VideoTailFactory::FrameReady,
-            m_VideoItem,
-            &VideoItem::PresentFrame,
-            ::Qt::QueuedConnection);
+        m_TailFactory = std::make_unique<QmlVideoSinkTailFactory>(*m_VideoItem, m_Logger);
 
         m_RuntimeWorker = new VideoRuntimeWorker(
             videoConfig,
@@ -178,7 +217,7 @@ namespace PiSubmarine::Operator::Station::Qt
             leaseIssuer,
             subscriptionService,
             std::move(pipelineBuilder),
-            m_TailFactory);
+            *m_TailFactory);
         m_RuntimeWorker->moveToThread(&m_RuntimeThread);
         QObject::connect(&m_RuntimeThread, &QThread::started, m_RuntimeWorker, &VideoRuntimeWorker::Start);
         QObject::connect(&m_RuntimeThread, &QThread::finished, m_RuntimeWorker, &QObject::deleteLater);
@@ -208,6 +247,8 @@ namespace PiSubmarine::Operator::Station::Qt
             m_RuntimeThread.wait();
         }
 
+        m_TailFactory.reset();
+
         if (m_Logger)
         {
             m_Logger->info("Video runtime stopped");
@@ -218,6 +259,9 @@ namespace PiSubmarine::Operator::Station::Qt
     {
         QCommandLineParser parser;
         ConfigureCommandLine(application, parser);
+
+        static SpdlogFactory loggerFactory;
+        m_Logger = loggerFactory.CreateLogger("Operator.Station.App");
 
         if (!LoadMainWindow())
         {

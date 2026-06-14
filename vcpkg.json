@@ -4,6 +4,7 @@
       "name": "gstreamer",
       "default-features": false,
       "features": [
+        "gl",
         "plugins-base",
         "plugins-good",
         "openh264"

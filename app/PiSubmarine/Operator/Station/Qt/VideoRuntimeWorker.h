@@ -12,13 +12,12 @@
 #include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Operator/Station/Video/Config.h"
 #include "PiSubmarine/Operator/Station/Video/IPipelineBuilder.h"
+#include "PiSubmarine/Operator/Station/Video/IVideoPipelineTailFactory.h"
 #include "PiSubmarine/Operator/Station/Video/VideoController.h"
 #include "PiSubmarine/Video/Subscription/Api/IService.h"
 
 namespace PiSubmarine::Operator::Station::Qt
 {
-    class VideoTailFactory;
-
     class VideoRuntimeWorker final : public QObject
     {
         Q_OBJECT
@@ -30,7 +29,7 @@ namespace PiSubmarine::Operator::Station::Qt
             Lease::Api::ILeaseIssuer& leaseIssuer,
             ::PiSubmarine::Video::Subscription::Api::IService& subscriptionService,
             std::shared_ptr<Video::IPipelineBuilder> pipelineBuilder,
-            VideoTailFactory& tailFactory,
+            Video::IVideoPipelineTailFactory& tailFactory,
             QObject* parent = nullptr);
 
     public slots:
@@ -46,7 +45,7 @@ namespace PiSubmarine::Operator::Station::Qt
         Lease::Api::ILeaseIssuer& m_LeaseIssuer;
         ::PiSubmarine::Video::Subscription::Api::IService& m_SubscriptionService;
         std::shared_ptr<Video::IPipelineBuilder> m_PipelineBuilder;
-        VideoTailFactory& m_TailFactory;
+        Video::IVideoPipelineTailFactory& m_TailFactory;
         std::shared_ptr<spdlog::logger> m_Logger;
         std::unique_ptr<Video::VideoController> m_Controller;
         QTimer* m_Timer = nullptr;

@@ -11,6 +11,7 @@
         "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports",
         "VCPKG_HOST_TRIPLET": "x64-windows-static",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static"
       },
@@ -46,6 +47,7 @@
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/toolchains/mingw.cmake",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports",
         "VCPKG_HOST_TRIPLET": "x64-mingw-static",
         "VCPKG_TARGET_TRIPLET": "x64-mingw-static"
       },
@@ -76,7 +78,8 @@
       "installDir": "${sourceDir}/out/install/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports"
       },
       "vendor": {
         "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
@@ -105,6 +108,7 @@
         "CMAKE_FIND_ROOT_PATH_MODE_LIBRARY": "ONLY",
         "CMAKE_FIND_ROOT_PATH_MODE_INCLUDE": "ONLY",
         "CMAKE_FIND_ROOT_PATH_MODE_PACKAGE": "ONLY",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports",
         "VCPKG_TARGET_TRIPLET": "arm64-linux",
         "VCPKG_HOST_TRIPLET": "x64-linux"
       },
@@ -132,6 +136,7 @@
         "CMAKE_RC_COMPILER": "/usr/bin/x86_64-w64-mingw32-windres",
         "CMAKE_TOOLCHAIN_FILE": "/home/dmitriy/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "/home/dmitriy/vcpkg/scripts/toolchains/mingw.cmake",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports",
         "VCPKG_HOST_TRIPLET": "x64-linux",
         "VCPKG_TARGET_TRIPLET": "x64-mingw-static"
       },
@@ -157,6 +162,7 @@
         "CMAKE_C_COMPILER": "/usr/bin/gcc",
         "CMAKE_CXX_COMPILER": "/usr/bin/g++",
         "CMAKE_TOOLCHAIN_FILE": "/home/dmitriy/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports",
         "VCPKG_HOST_TRIPLET": "x64-linux",
         "VCPKG_TARGET_TRIPLET": "x64-linux"
       },

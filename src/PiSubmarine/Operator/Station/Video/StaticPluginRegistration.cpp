@@ -19,6 +19,7 @@ GST_PLUGIN_STATIC_DECLARE(rtp);
 GST_PLUGIN_STATIC_DECLARE(udp);
 #if defined(_WIN32)
 GST_PLUGIN_STATIC_DECLARE(mediafoundation);
+GST_PLUGIN_STATIC_DECLARE(qt6d3d11);
 #else
 GST_PLUGIN_STATIC_DECLARE(video4linux2);
 #endif
@@ -49,6 +50,7 @@ namespace PiSubmarine::Operator::Station::Video
             GST_PLUGIN_STATIC_REGISTER(udp);
 #if defined(_WIN32)
             GST_PLUGIN_STATIC_REGISTER(mediafoundation);
+            GST_PLUGIN_STATIC_REGISTER(qt6d3d11);
 #else
             GST_PLUGIN_STATIC_REGISTER(video4linux2);
 #endif
