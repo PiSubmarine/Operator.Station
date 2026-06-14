@@ -19,8 +19,9 @@
 
 #include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
-#include "PiSubmarine/Operator/Station/Qt/VideoItem.h"
+#include "PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.h"
 #include "PiSubmarine/Operator/Station/Qt/VideoRuntimeWorker.h"
+#include "PiSubmarine/Operator/Station/Qt/VideoSurfaceItem.h"
 #include "PiSubmarine/Operator/Station/Video/Config.h"
 #include "PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h"
 #include "PiSubmarine/Operator/Station/Video/RtpPipelineBuilder.h"
@@ -124,14 +125,14 @@ namespace PiSubmarine::Operator::Station::Qt
 
     bool StationApp::LoadMainWindow()
     {
-        qmlRegisterType<VideoItem>("PiSubmarine.Operator.Station", 1, 0, "VideoItem");
+        qmlRegisterType<VideoSurfaceItem>("PiSubmarine.Operator.Station", 1, 0, "VideoSurfaceItem");
         m_Engine.load(QUrl("qrc:/PiSubmarine/Operator/Station/qml/Main.qml"));
         if (m_Engine.rootObjects().isEmpty())
         {
             return false;
         }
 
-        m_VideoItem = m_Engine.rootObjects().front()->findChild<VideoItem*>("videoSurface");
+        m_VideoItem = m_Engine.rootObjects().front()->findChild<VideoSurfaceItem*>("videoSurface");
         return m_VideoItem != nullptr;
     }
 
@@ -157,20 +158,7 @@ namespace PiSubmarine::Operator::Station::Qt
                 ? Video::CreateFakePipelineBuilder(loggerFactory)
                 : Video::CreateRtpPipelineBuilder(loggerFactory);
 
-        QObject::connect(&m_TailFactory, &VideoTailFactory::FrameReady, m_VideoItem, [this](const QImage&)
-        {
-            if (!m_HasReceivedFirstFrame && m_Logger)
-            {
-                m_HasReceivedFirstFrame = true;
-                m_Logger->info("First video frame received");
-            }
-        });
-        QObject::connect(
-            &m_TailFactory,
-            &VideoTailFactory::FrameReady,
-            m_VideoItem,
-            &VideoItem::PresentFrame,
-            ::Qt::QueuedConnection);
+        m_TailFactory = std::make_unique<QmlVideoSinkTailFactory>(*m_VideoItem, m_Logger);
 
         m_RuntimeWorker = new VideoRuntimeWorker(
             videoConfig,
@@ -178,7 +166,7 @@ namespace PiSubmarine::Operator::Station::Qt
             leaseIssuer,
             subscriptionService,
             std::move(pipelineBuilder),
-            m_TailFactory);
+            *m_TailFactory);
         m_RuntimeWorker->moveToThread(&m_RuntimeThread);
         QObject::connect(&m_RuntimeThread, &QThread::started, m_RuntimeWorker, &VideoRuntimeWorker::Start);
         QObject::connect(&m_RuntimeThread, &QThread::finished, m_RuntimeWorker, &QObject::deleteLater);
@@ -207,6 +195,8 @@ namespace PiSubmarine::Operator::Station::Qt
             m_RuntimeThread.quit();
             m_RuntimeThread.wait();
         }
+
+        m_TailFactory.reset();
 
         if (m_Logger)
         {

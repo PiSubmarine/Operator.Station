@@ -9,7 +9,7 @@ Window {
     color: "#05080d"
     title: "PiSubmarine Operator Station"
 
-    VideoItem {
+    VideoSurfaceItem {
         id: videoSurface
         objectName: "videoSurface"
         anchors.fill: parent

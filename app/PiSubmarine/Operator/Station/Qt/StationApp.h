@@ -6,7 +6,7 @@
 #include <QQmlApplicationEngine>
 #include <QThread>
 
-#include "PiSubmarine/Operator/Station/Qt/VideoTailFactory.h"
+#include "PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.h"
 
 namespace spdlog
 {
@@ -18,8 +18,8 @@ class QGuiApplication;
 
 namespace PiSubmarine::Operator::Station::Qt
 {
-    class VideoItem;
     class VideoRuntimeWorker;
+    class VideoSurfaceItem;
 
     class StationApp final
     {
@@ -34,10 +34,9 @@ namespace PiSubmarine::Operator::Station::Qt
 
         QQmlApplicationEngine m_Engine;
         QThread m_RuntimeThread;
-        VideoTailFactory m_TailFactory;
+        std::unique_ptr<QmlVideoSinkTailFactory> m_TailFactory;
         VideoRuntimeWorker* m_RuntimeWorker = nullptr;
-        VideoItem* m_VideoItem = nullptr;
+        VideoSurfaceItem* m_VideoItem = nullptr;
         std::shared_ptr<spdlog::logger> m_Logger;
-        bool m_HasReceivedFirstFrame = false;
     };
 }
