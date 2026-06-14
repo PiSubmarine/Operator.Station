@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/PiSubmarine/Operator/Station">
         <file>qml/Main.qml</file>
+        <file>qml/Main.Windows.qml</file>
     </qresource>
 </RCC>

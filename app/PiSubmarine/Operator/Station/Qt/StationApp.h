@@ -19,7 +19,6 @@ class QGuiApplication;
 namespace PiSubmarine::Operator::Station::Qt
 {
     class VideoRuntimeWorker;
-    class VideoSurfaceItem;
 
     class StationApp final
     {
@@ -36,7 +35,7 @@ namespace PiSubmarine::Operator::Station::Qt
         QThread m_RuntimeThread;
         std::unique_ptr<QmlVideoSinkTailFactory> m_TailFactory;
         VideoRuntimeWorker* m_RuntimeWorker = nullptr;
-        VideoSurfaceItem* m_VideoItem = nullptr;
+        QQuickItem* m_VideoItem = nullptr;
         std::shared_ptr<spdlog::logger> m_Logger;
     };
 }
