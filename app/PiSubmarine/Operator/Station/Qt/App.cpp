@@ -1,4 +1,4 @@
-#include "PiSubmarine/Operator/Station/Qt/StationApp.h"
+#include "PiSubmarine/Operator/Station/Qt/App.h"
 
 #include <chrono>
 #include <memory>
@@ -18,6 +18,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include "PiSubmarine/Gstreamer/Build/Plugins.h"
 #include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.h"
@@ -26,11 +27,6 @@
 #include "PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h"
 #include "PiSubmarine/Operator/Station/Video/RtpPipelineBuilder.h"
 #include "PiSubmarine/Video/Subscription/Api/IService.h"
-
-namespace PiSubmarine::Operator::Station::Video
-{
-    void RegisterStaticPlugins(const std::shared_ptr<spdlog::logger>& logger);
-}
 
 namespace PiSubmarine::Operator::Station::Qt
 {
@@ -134,7 +130,7 @@ namespace PiSubmarine::Operator::Station::Qt
                 return false;
             }
 
-            Video::RegisterStaticPlugins(logger);
+            ::PiSubmarine::Gstreamer::Build::Plugins::RegisterStatic(logger);
 
 #if defined(_WIN32)
             if (auto* warmupSink = gst_element_factory_make("qml6d3d11sink", nullptr))
@@ -152,7 +148,7 @@ namespace PiSubmarine::Operator::Station::Qt
         }
     }
 
-    bool StationApp::ConfigureCommandLine(QGuiApplication& application, QCommandLineParser& parser) const
+    bool App::ConfigureCommandLine(QGuiApplication& application, QCommandLineParser& parser) const
     {
         parser.setApplicationDescription("PiSubmarine Operator Station");
         parser.addHelpOption();
@@ -163,7 +159,7 @@ namespace PiSubmarine::Operator::Station::Qt
         return true;
     }
 
-    bool StationApp::LoadMainWindow()
+    bool App::LoadMainWindow()
     {
         if (!EnsureGstreamerReadyForQml(m_Logger))
         {
@@ -187,7 +183,7 @@ namespace PiSubmarine::Operator::Station::Qt
         return m_VideoItem != nullptr;
     }
 
-    bool StationApp::StartVideoRuntime(bool useFakeVideo, std::uint16_t videoPort, const std::string& bindAddress)
+    bool App::StartVideoRuntime(bool useFakeVideo, std::uint16_t videoPort, const std::string& bindAddress)
     {
         if (m_VideoItem == nullptr)
         {
@@ -233,7 +229,7 @@ namespace PiSubmarine::Operator::Station::Qt
         return true;
     }
 
-    void StationApp::StopVideoRuntime()
+    void App::StopVideoRuntime()
     {
         if (m_RuntimeWorker != nullptr)
         {
@@ -255,7 +251,7 @@ namespace PiSubmarine::Operator::Station::Qt
         }
     }
 
-    int StationApp::Run(QGuiApplication& application)
+    int App::Run(QGuiApplication& application)
     {
         QCommandLineParser parser;
         ConfigureCommandLine(application, parser);

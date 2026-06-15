@@ -43,6 +43,7 @@ namespace PiSubmarine::Operator::Station::Video
         [[nodiscard]] Error::Api::Result<void> SetSubscriptionEndpoint(
             const ::PiSubmarine::Video::Subscription::Api::Endpoint& subscriptionEndpoint);
         void ClearPipelineTailFactory();
+
         void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
     private:

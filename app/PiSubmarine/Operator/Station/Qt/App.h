@@ -20,7 +20,7 @@ namespace PiSubmarine::Operator::Station::Qt
 {
     class VideoRuntimeWorker;
 
-    class StationApp final
+    class App final
     {
     public:
         [[nodiscard]] int Run(QGuiApplication& application);

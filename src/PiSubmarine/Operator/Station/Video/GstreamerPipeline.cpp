@@ -6,7 +6,6 @@
 #include <spdlog/spdlog.h>
 
 #include "PiSubmarine/Error/Api/MakeError.h"
-#include "PiSubmarine/Operator/Station/Video/StaticPluginRegistration.h"
 
 namespace PiSubmarine::Operator::Station::Video
 {
@@ -93,7 +92,6 @@ namespace PiSubmarine::Operator::Station::Video
                 return;
             }
 
-            RegisterStaticPlugins(logger);
         });
 
         return GstreamerInitialized;

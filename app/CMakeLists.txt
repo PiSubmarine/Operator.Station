@@ -27,8 +27,8 @@ add_executable(${PISUBMARINE_MODULE_NAME}.App
         PiSubmarine/Operator/Station/main.cpp
         PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.cpp
         PiSubmarine/Operator/Station/Qt/QmlVideoSinkTailFactory.h
-        PiSubmarine/Operator/Station/Qt/StationApp.cpp
-        PiSubmarine/Operator/Station/Qt/StationApp.h
+        PiSubmarine/Operator/Station/Qt/App.cpp
+        PiSubmarine/Operator/Station/Qt/App.h
         PiSubmarine/Operator/Station/Qt/VideoSurfaceItem.cpp
         PiSubmarine/Operator/Station/Qt/VideoSurfaceItem.h
         PiSubmarine/Operator/Station/Qt/VideoRuntimeWorker.cpp

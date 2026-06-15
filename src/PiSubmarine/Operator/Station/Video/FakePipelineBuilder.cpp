@@ -8,7 +8,6 @@
 #include <spdlog/logger.h>
 
 #include "PiSubmarine/Operator/Station/Video/IPipeline.h"
-#include "PiSubmarine/Operator/Station/Video/StaticPluginRegistration.h"
 
 namespace PiSubmarine::Operator::Station::Video
 {
@@ -37,9 +36,6 @@ namespace PiSubmarine::Operator::Station::Video
 
                     throw std::runtime_error("Failed to initialize GStreamer");
                 }
-
-                RegisterStaticPlugins(m_Logger);
-
                 auto* pipeline = gst_pipeline_new("operator-station-fake-video");
                 auto* source = gst_element_factory_make("videotestsrc", "source");
                 auto* converter = gst_element_factory_make("videoconvert", "converter");
