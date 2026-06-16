@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/PiSubmarine/Operator/Station">
+        <file>qml/Main.qml</file>
+        <file>qml/Main.Windows.qml</file>
+        <file alias="Telemetry/View/Battery/BatteryPanel.qml">../Telemetry/View/Battery/BatteryPanel.qml</file>
+        <file alias="Telemetry/View/Lamp/LampPanel.qml">../Telemetry/View/Lamp/LampPanel.qml</file>
+        <file alias="Telemetry/View/Motor/MotorPanel.qml">../Telemetry/View/Motor/MotorPanel.qml</file>
+        <file alias="Input/View/ControlPanel.qml">../Input/View/ControlPanel.qml</file>
+    </qresource>
+</RCC>
