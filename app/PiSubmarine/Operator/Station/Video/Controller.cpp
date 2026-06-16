@@ -295,8 +295,9 @@ namespace PiSubmarine::Operator::Station::Video
         {
             m_Pipeline = m_PipelineBuilder->Build(m_Config.ReceiveEndpoint, m_TailFactory);
         }
-        catch (...)
+        catch (const std::exception& exception)
         {
+            SPDLOG_LOGGER_ERROR(m_Logger, "Failed to build pipeline: {}", exception.what());
             return std::unexpected(Error::Api::MakeError(Error::Api::ErrorCondition::DeviceError));
         }
 
