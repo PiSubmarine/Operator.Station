@@ -13,7 +13,7 @@
 
 namespace PiSubmarine::Operator::Station::Infrastructure
 {
-    class SpdlogFactory final : public Logging::Api::IFactory
+    class SpdlogFactory final : public PiSubmarine::Logging::Api::IFactory
     {
     public:
         [[nodiscard]] std::shared_ptr<spdlog::logger> CreateLogger(std::string_view name) override

@@ -23,9 +23,9 @@ namespace PiSubmarine::Operator::Station::Input
 
     public:
         Controller(
-            ::PiSubmarine::Control::Api::Input::ISink& sink,
+            Control::Api::Input::ISink& sink,
             View::ViewModel& viewModel,
-            Logging::Api::IFactory& loggerFactory,
+            PiSubmarine::Logging::Api::IFactory& loggerFactory,
             QObject* parent = nullptr);
 
     public slots:

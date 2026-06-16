@@ -12,6 +12,7 @@
 #include <gst/gst.h>
 #include <spdlog/logger.h>
 
+#include "PiSubmarine/Operator/Station/Infrastructure/QtLog.h"
 #include "PiSubmarine/Error/Api/Result.h"
 #include "PiSubmarine/Gstreamer/Build/Plugins.h"
 #include "PiSubmarine/Operator/Station/Infrastructure/SpdlogFactory.h"
@@ -84,6 +85,12 @@ namespace
 
 int main(int argc, char* argv[])
 {
+    PiSubmarine::Operator::Station::Infrastructure::SpdlogFactory loggerFactory;
+    auto qtLogger = loggerFactory.CreateLogger("Qt");
+    PiSubmarine::Operator::Station::Infrastructure::InstallQtMessageHandler(qtLogger);
+
+    Q_INIT_RESOURCE(qml);
+
     QGuiApplication application(argc, argv);
 
     QCommandLineParser parser;
@@ -94,7 +101,7 @@ int main(int argc, char* argv[])
     parser.addOption(QCommandLineOption("telemetry-port", "Local telemetry subscription port.", "port", "6100"));
     parser.process(application);
 
-    PiSubmarine::Operator::Station::Infrastructure::SpdlogFactory loggerFactory;
+
     const auto logger = loggerFactory.CreateLogger("Operator.Station.Main");
     if (!logger || !EnsureGstreamerReadyForQml(logger))
     {

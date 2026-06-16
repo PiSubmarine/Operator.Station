@@ -101,7 +101,9 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.h
         PiSubmarine/Operator/Station/View/qml.qrc
         PiSubmarine/Operator/Station/View/qml/Main.qml
-        PiSubmarine/Operator/Station/View/qml/Main.Windows.qml)
+        PiSubmarine/Operator/Station/View/qml/Main.Windows.qml
+        PiSubmarine/Operator/Station/Infrastructure/QtLog.cpp
+        PiSubmarine/Operator/Station/Infrastructure/QtLog.h)
 PiSubmarineInitTarget(${PISUBMARINE_MODULE_NAME}.AppCommon)
 target_include_directories(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC ./)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC spdlog::spdlog)

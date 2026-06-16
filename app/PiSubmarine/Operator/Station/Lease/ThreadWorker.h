@@ -21,7 +21,7 @@ namespace PiSubmarine::Operator::Station::Lease
     public:
         ThreadWorker(
             ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
-            Logging::Api::IFactory& loggerFactory,
+            PiSubmarine::Logging::Api::IFactory& loggerFactory,
             QObject* parent = nullptr);
 
         [[nodiscard]] bool EnqueueAcquireLease(const ::PiSubmarine::Lease::Api::LeaseRequest& request) override;
