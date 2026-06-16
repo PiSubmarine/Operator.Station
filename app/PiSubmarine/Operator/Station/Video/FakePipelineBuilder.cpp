@@ -82,6 +82,7 @@ namespace PiSubmarine::Operator::Station::Video
                 return {};
             }
 
+            // TODO Implement proper logging
             void PollBus() override
             {
                 if (!m_Pipeline)
