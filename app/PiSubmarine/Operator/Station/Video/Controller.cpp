@@ -1,6 +1,7 @@
 #include "PiSubmarine/Operator/Station/Video/Controller.h"
 
 #include <stdexcept>
+#include <QThread>
 
 #include <spdlog/spdlog.h>
 
@@ -38,6 +39,7 @@ namespace PiSubmarine::Operator::Station::Video
             throw std::invalid_argument("Video controller requires logger and pipeline builder");
         }
 
+        m_Timer.setParent(this);
         m_Timer.setInterval(16);
         connect(&m_Timer, &QTimer::timeout, this, &Controller::TickNow);
     }
@@ -59,6 +61,7 @@ namespace PiSubmarine::Operator::Station::Video
         m_NextRetryTime = std::chrono::nanoseconds::zero();
         m_StartTime = std::chrono::steady_clock::now();
         m_LastTickTime = m_StartTime;
+
         m_Timer.start();
     }
 

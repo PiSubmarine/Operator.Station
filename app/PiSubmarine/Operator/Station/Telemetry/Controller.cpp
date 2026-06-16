@@ -24,6 +24,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         , m_BatteryController(batteryController)
         , m_Logger(loggerFactory.CreateLogger("Operator.Station.Telemetry.Controller"))
     {
+        m_Timer.setParent(this);
         m_Timer.setInterval(200);
         connect(&m_Timer, &QTimer::timeout, this, &Controller::Tick);
     }
