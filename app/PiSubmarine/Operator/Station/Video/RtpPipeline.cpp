@@ -70,7 +70,7 @@ namespace PiSubmarine::Operator::Station::Video
 		}
 	}
 
-	// FIXME do not rely on pointer. Check actual pipeline state.
+	// TODO do not rely on pointer. Check actual pipeline state.
 	bool RtpPipeline::IsRunning() const noexcept
 	{
 		return m_Pipeline != nullptr;
@@ -181,7 +181,7 @@ namespace PiSubmarine::Operator::Station::Video
 		if (gst_element_set_state(pipeline.get(), GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
 		{
 			gst_object_unref(tail);
-			// FIXME DrainBusMessages will not show any error because m_Pipeline = std::move(pipeline) is never reached
+			// TODO DrainBusMessages will not show any error because m_Pipeline = std::move(pipeline) is never reached
 			return std::unexpected(MakePipelineError());
 		}
 

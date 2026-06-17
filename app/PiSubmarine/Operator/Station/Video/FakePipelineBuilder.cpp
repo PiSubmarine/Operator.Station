@@ -38,7 +38,7 @@ namespace PiSubmarine::Operator::Station::Video
                     throw std::runtime_error("Failed to initialize GStreamer");
                 }
 
-                // FIXME these pointers will probably leak. Use GstElementPtr from GstreamerPipeline class.
+                // TODO these pointers will probably leak. Use GstElementPtr from GstreamerPipeline class.
                 auto* pipeline = gst_pipeline_new("operator-station-fake-video");
                 auto* source = gst_element_factory_make("videotestsrc", "source");
                 auto* converter = gst_element_factory_make("videoconvert", "converter");

@@ -6,6 +6,7 @@
 
 namespace PiSubmarine::Operator::Station::Video
 {
+    // TODO introduce similar Status reporting for Input and Telemetry.
     struct Status
     {
         bool IsStarted = false;

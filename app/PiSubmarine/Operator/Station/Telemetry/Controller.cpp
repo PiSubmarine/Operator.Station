@@ -96,7 +96,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
     }
 
-    // FIXME WTF, Use Error::Api::ErrorCondition::NotReady directly.
+    // TODO WTF, Use Error::Api::ErrorCondition::NotReady directly.
     Error::Api::ErrorCondition Controller::GetNotReadyCondition()
     {
         return static_cast<Error::Api::ErrorCondition>(3);
@@ -111,8 +111,10 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
         const auto result = m_LeaseIssuer.AcquireLease({
             .Resource = ::PiSubmarine::Lease::Api::ResourceId{.Value = "telemetry-main"}});
+
         if (!result.has_value())
         {
+            // TODO current code does not distinguish between denial and temporary unavailability. All errors are reported as "Not Ready", which is inaccurate.
             return result.error().Condition == GetNotReadyCondition();
         }
 
@@ -143,6 +145,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         m_NextRenewal = uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_Lease->Duration / 2);
     }
 
+    // TODO not needed
     void Controller::EnsureSubscription()
     {
         if (m_IsSubscribed || !m_Lease.has_value())

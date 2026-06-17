@@ -39,11 +39,12 @@ namespace PiSubmarine::Operator::Station::Video
 			::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
 			::PiSubmarine::Video::Subscription::Api::IService& subscriptionService,
 			std::shared_ptr<IPipelineBuilder> pipelineBuilder,
-			// FIXME tail factory is only used to feed IPipelineBuilder::Build. Consider moving IVideoPipelineTailFactory dependency from Controller to the pipeline builders. Controller should not care about the pipeline structure.
+			// TODO tail factory is only used to feed IPipelineBuilder::Build. Consider moving IVideoPipelineTailFactory dependency from Controller to the pipeline builders. Controller should not care about the pipeline structure.
 			IVideoPipelineTailFactory& tailFactory,
 			QObject* parent = nullptr);
 		~Controller() override;
 
+		// TODO Error::Api::Result is intended for cross-domain communication. No need to use it in internal methods, especially for methods that cannot fail.
 		[[nodiscard]] Error::Api::Result<Status> GetStatus() const;
 		void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
