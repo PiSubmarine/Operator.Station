@@ -4,6 +4,7 @@
 
 namespace PiSubmarine::Operator::Station::Telemetry
 {
+    // FIXME FakeSubscriptionService is not needed
     class FakeSubscriptionService final : public ISubscriptionService
     {
     public:

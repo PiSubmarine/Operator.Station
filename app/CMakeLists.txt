@@ -85,8 +85,8 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Video/FakeController.h
         PiSubmarine/Operator/Station/Video/FakePipelineBuilder.cpp
         PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h
-        PiSubmarine/Operator/Station/Video/GstreamerPipeline.cpp
-        PiSubmarine/Operator/Station/Video/GstreamerPipeline.h
+        PiSubmarine/Operator/Station/Video/RtpPipeline.cpp
+        PiSubmarine/Operator/Station/Video/RtpPipeline.h
         PiSubmarine/Operator/Station/Video/IPipeline.h
         PiSubmarine/Operator/Station/Video/IPipelineBuilder.h
         PiSubmarine/Operator/Station/Video/IVideoPipelineTailFactory.h
@@ -103,7 +103,9 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/View/qml/Main.qml
         PiSubmarine/Operator/Station/View/qml/Main.Windows.qml
         PiSubmarine/Operator/Station/Infrastructure/QtLog.cpp
-        PiSubmarine/Operator/Station/Infrastructure/QtLog.h)
+        PiSubmarine/Operator/Station/Infrastructure/QtLog.h
+        PiSubmarine/Operator/Station/Video/GstreamerPipeline.cpp
+        PiSubmarine/Operator/Station/Video/GstreamerPipeline.h)
 PiSubmarineInitTarget(${PISUBMARINE_MODULE_NAME}.AppCommon)
 target_include_directories(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC ./)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC spdlog::spdlog)

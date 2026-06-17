@@ -6,6 +6,7 @@
 
 namespace PiSubmarine::Operator::Station::Telemetry
 {
+    // FIXME PiSubmarine::Operator::Station::Telemetry::ISubscriptionService is not needed. Subscription is maintained internally by Telemetry.Client.Udp. Remove ISubscriptionService type completely.
     class ISubscriptionService
     {
     public:

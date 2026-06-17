@@ -96,6 +96,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
     }
 
+    // FIXME WTF, Use Error::Api::ErrorCondition::NotReady directly.
     Error::Api::ErrorCondition Controller::GetNotReadyCondition()
     {
         return static_cast<Error::Api::ErrorCondition>(3);

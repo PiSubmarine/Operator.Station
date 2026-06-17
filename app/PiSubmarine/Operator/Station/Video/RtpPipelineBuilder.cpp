@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <utility>
 
-#include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
+#include "PiSubmarine/Operator/Station/Video/RtpPipeline.h"
 
 namespace PiSubmarine::Operator::Station::Video
 {
@@ -27,7 +27,7 @@ namespace PiSubmarine::Operator::Station::Video
                     throw std::invalid_argument("Operator.Station.Video requires a GStreamer logger");
                 }
 
-                return std::make_unique<GstreamerPipeline>(receiveEndpoint, tailFactory, std::move(logger));
+                return std::make_unique<RtpPipeline>(receiveEndpoint, tailFactory, std::move(logger));
             }
 
         private:

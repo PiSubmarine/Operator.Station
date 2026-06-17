@@ -11,14 +11,14 @@
 
 namespace PiSubmarine::Operator::Station::Video
 {
-    class GstreamerPipeline final : public IPipeline
+    class RtpPipeline final : public IPipeline
     {
     public:
-        GstreamerPipeline(
+        RtpPipeline(
             const ReceiveEndpoint& receiveEndpoint,
             IVideoPipelineTailFactory& tailFactory,
             std::shared_ptr<spdlog::logger> logger);
-        ~GstreamerPipeline() override;
+        ~RtpPipeline() override;
 
         [[nodiscard]] Error::Api::Result<void> Stop() override;
         void PollBus() override;

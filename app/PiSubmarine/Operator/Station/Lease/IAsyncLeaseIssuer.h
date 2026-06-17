@@ -15,6 +15,7 @@ namespace PiSubmarine::Operator::Station::Lease
         virtual ~IAsyncLeaseIssuer() = default;
 
         [[nodiscard]] virtual bool EnqueueAcquireLease(const ::PiSubmarine::Lease::Api::LeaseRequest& request) = 0;
+        // TODO optional<expected<>> seems overengineered. Why not use Result directly? Is it not expressive enough?
         [[nodiscard]] virtual std::optional<Error::Api::Result<::PiSubmarine::Lease::Api::LeaseGrant>>
         TryTakeAcquireLeaseResult(const ::PiSubmarine::Lease::Api::LeaseRequest& request) = 0;
 

@@ -13,6 +13,7 @@ namespace PiSubmarine::Operator::Station::Video
 {
     namespace
     {
+        // TODO Move fake pipeline to FakePipeline class and inherit from GstreamerPipeline, like RtpPipeline does. Try to share functionality as much as possible.
         class FakePipeline final : public IPipeline
         {
         public:
@@ -37,6 +38,7 @@ namespace PiSubmarine::Operator::Station::Video
                     throw std::runtime_error("Failed to initialize GStreamer");
                 }
 
+                // FIXME these pointers will probably leak. Use GstElementPtr from GstreamerPipeline class.
                 auto* pipeline = gst_pipeline_new("operator-station-fake-video");
                 auto* source = gst_element_factory_make("videotestsrc", "source");
                 auto* converter = gst_element_factory_make("videoconvert", "converter");
@@ -82,7 +84,7 @@ namespace PiSubmarine::Operator::Station::Video
                 return {};
             }
 
-            // TODO Implement proper logging
+            // TODO Implement common logging handler in GstreamerPipeline. Use RtpPipeline's implementation as reference.
             void PollBus() override
             {
                 if (!m_Pipeline)

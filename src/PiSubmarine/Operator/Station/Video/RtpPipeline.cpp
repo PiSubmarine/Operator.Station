@@ -1,4 +1,4 @@
-#include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
+#include "PiSubmarine/Operator/Station/Video/RtpPipeline.h"
 
 #include <mutex>
 #include <stdexcept>
@@ -25,7 +25,7 @@ namespace PiSubmarine::Operator::Station::Video
         }
     }
 
-    GstreamerPipeline::GstreamerPipeline(
+    RtpPipeline::RtpPipeline(
         const ReceiveEndpoint& receiveEndpoint,
         IVideoPipelineTailFactory& tailFactory,
         std::shared_ptr<spdlog::logger> logger)
@@ -43,12 +43,12 @@ namespace PiSubmarine::Operator::Station::Video
         }
     }
 
-    GstreamerPipeline::~GstreamerPipeline()
+    RtpPipeline::~RtpPipeline()
     {
         static_cast<void>(Stop());
     }
 
-    Error::Api::Result<void> GstreamerPipeline::Stop()
+    Error::Api::Result<void> RtpPipeline::Stop()
     {
         if (!m_Pipeline)
         {
@@ -61,7 +61,7 @@ namespace PiSubmarine::Operator::Station::Video
         return {};
     }
 
-    void GstreamerPipeline::PollBus()
+    void RtpPipeline::PollBus()
     {
         if (!m_Pipeline)
         {
@@ -71,12 +71,12 @@ namespace PiSubmarine::Operator::Station::Video
         DrainBusMessages();
     }
 
-    bool GstreamerPipeline::IsRunning() const noexcept
+    bool RtpPipeline::IsRunning() const noexcept
     {
         return m_Pipeline != nullptr;
     }
 
-    bool GstreamerPipeline::InitializeGstreamer(const std::shared_ptr<spdlog::logger>& logger)
+    bool RtpPipeline::InitializeGstreamer(const std::shared_ptr<spdlog::logger>& logger)
     {
         std::call_once(GstreamerInitFlag, [&logger]
         {
@@ -97,12 +97,12 @@ namespace PiSubmarine::Operator::Station::Video
         return GstreamerInitialized;
     }
 
-    GstreamerPipeline::GstElementPtr GstreamerPipeline::CreateElement(const char* factoryName, const char* elementName)
+    RtpPipeline::GstElementPtr RtpPipeline::CreateElement(const char* factoryName, const char* elementName)
     {
         return GstElementPtr(gst_element_factory_make(factoryName, elementName));
     }
 
-    Error::Api::Result<void> GstreamerPipeline::BuildPipeline(
+    Error::Api::Result<void> RtpPipeline::BuildPipeline(
         const ReceiveEndpoint& receiveEndpoint,
         IVideoPipelineTailFactory& tailFactory)
     {
@@ -191,7 +191,7 @@ namespace PiSubmarine::Operator::Station::Video
         return {};
     }
 
-    void GstreamerPipeline::DrainBusMessages()
+    void RtpPipeline::DrainBusMessages()
     {
         GstObjectPtr bus(GST_OBJECT(gst_element_get_bus(m_Pipeline.get())));
         if (!bus)
@@ -251,7 +251,7 @@ namespace PiSubmarine::Operator::Station::Video
         }
     }
 
-    void GstreamerPipeline::GstObjectDeleter::operator()(GstObject* object) const noexcept
+    void RtpPipeline::GstObjectDeleter::operator()(GstObject* object) const noexcept
     {
         if (object != nullptr)
         {
@@ -259,7 +259,7 @@ namespace PiSubmarine::Operator::Station::Video
         }
     }
 
-    void GstreamerPipeline::GstElementDeleter::operator()(GstElement* element) const noexcept
+    void RtpPipeline::GstElementDeleter::operator()(GstElement* element) const noexcept
     {
         if (element != nullptr)
         {

@@ -27,6 +27,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         Q_OBJECT
 
     public:
+        // FIXME PiSubmarine::Operator::Station::Telemetry::ISubscriptionService is not needed. Subscription is maintained internally by Telemetry.Client.Udp. Remove ISubscriptionService type completely.
         Controller(
             ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
             ISubscriptionService& subscriptionService,
