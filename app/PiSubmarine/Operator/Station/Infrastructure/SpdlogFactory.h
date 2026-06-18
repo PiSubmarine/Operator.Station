@@ -16,6 +16,7 @@ namespace PiSubmarine::Operator::Station::Infrastructure
     class SpdlogFactory final : public PiSubmarine::Logging::Api::IFactory
     {
     public:
+        // TODO Is there a reason for keeping it in .h file? If no, move to SpdlogFactory.cpp.
         [[nodiscard]] std::shared_ptr<spdlog::logger> CreateLogger(std::string_view name) override
         {
             const auto loggerName = std::string(name);
