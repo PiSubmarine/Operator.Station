@@ -22,6 +22,7 @@ namespace PiSubmarine::Operator::Station::Input
         Q_OBJECT
 
     public:
+        // TODO Input Controller should not depend on ViewModel. Use signals to communicate between Controller and ViewModel. Signals must be wired by Composition Root.
         Controller(
             Control::Api::Input::ISink& sink,
             View::ViewModel& viewModel,

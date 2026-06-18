@@ -43,6 +43,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
     void Controller::Stop()
     {
+        // TODO m_Timer is moved to another thread, but stopped in UI thread.
         m_Timer.stop();
         m_IsStarted = false;
 

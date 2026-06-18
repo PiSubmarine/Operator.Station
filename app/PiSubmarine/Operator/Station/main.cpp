@@ -62,6 +62,7 @@ namespace
         ::PiSubmarine::Lease::Api::LeaseId m_LastLeaseId{};
     };
 
+    // TODO Move to GstreamerPipeline. Rename to EnsureGstreamerInitialized
     bool EnsureGstreamerReadyForQml(const std::shared_ptr<spdlog::logger>& logger)
     {
         GError* error = nullptr;
@@ -141,12 +142,14 @@ int main(int argc, char* argv[])
     engine.load(mainWindowUrl);
     if (engine.rootObjects().isEmpty())
     {
+        // TODO Add error log line
         return 1;
     }
 
     auto* videoItem = engine.rootObjects().front()->findChild<QQuickItem*>("videoSurface");
     if (videoItem == nullptr)
     {
+        // TODO Add error log line
         return 1;
     }
 

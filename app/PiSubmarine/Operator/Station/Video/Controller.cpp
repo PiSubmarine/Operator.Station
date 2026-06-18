@@ -67,6 +67,7 @@ namespace PiSubmarine::Operator::Station::Video
 
     void Controller::Stop()
     {
+        // TODO m_Timer is moved to another thread, but stopped in UI thread.
         m_Timer.stop();
 
         if (!m_IsStarted && !m_Pipeline && !m_LeaseGrant.has_value())
