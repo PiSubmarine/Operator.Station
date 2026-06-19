@@ -200,7 +200,7 @@ namespace PiSubmarine::Operator::Station::Lease
 
             if (acquireRequest.has_value())
             {
-                SPDLOG_LOGGER_INFO(m_Logger, "Acquiring lease for '{}'", acquireRequest->second.Resource.Value);
+                SPDLOG_LOGGER_DEBUG(m_Logger, "Acquiring lease for '{}'", acquireRequest->second.Resource.Value);
                 auto result = m_LeaseIssuer.AcquireLease(acquireRequest->second);
                 std::lock_guard lock(m_Mutex);
                 auto& state = m_AcquireStates[acquireRequest->first];
@@ -211,7 +211,7 @@ namespace PiSubmarine::Operator::Station::Lease
 
             if (renewRequest.has_value())
             {
-                SPDLOG_LOGGER_INFO(m_Logger, "Renewing lease '{}'", renewRequest->second.Value);
+                SPDLOG_LOGGER_DEBUG(m_Logger, "Renewing lease '{}'", renewRequest->second.Value);
                 auto result = m_LeaseIssuer.RenewLease(renewRequest->second);
                 std::lock_guard lock(m_Mutex);
                 auto& state = m_RenewStates[renewRequest->first];
@@ -222,7 +222,7 @@ namespace PiSubmarine::Operator::Station::Lease
 
             if (releaseRequest.has_value())
             {
-                SPDLOG_LOGGER_INFO(m_Logger, "Releasing lease '{}'", releaseRequest->second.Value);
+                SPDLOG_LOGGER_DEBUG(m_Logger, "Releasing lease '{}'", releaseRequest->second.Value);
                 auto result = m_LeaseIssuer.ReleaseLease(releaseRequest->second);
                 std::lock_guard lock(m_Mutex);
                 auto& state = m_ReleaseStates[releaseRequest->first];
