@@ -3,11 +3,8 @@
 #include <chrono>
 #include <memory>
 #include <optional>
-
 #include <QObject>
 #include <QString>
-#include <QTimer>
-
 #include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Operator/Station/Video/Config.h"
@@ -27,7 +24,7 @@ namespace PiSubmarine::Operator::Station::Video
 {
 	class IPipeline;
 
-	class Controller final : public QObject, public Time::ITickable
+	class Controller final : public QObject, public PiSubmarine::Time::ITickable
 	{
 		Q_OBJECT
 
@@ -50,9 +47,6 @@ namespace PiSubmarine::Operator::Station::Video
 		void SetReceiveEndpoint(const QString& bindAddress, quint16 port);
 		void SetSubscriptionEndpoint(const QString& host, quint16 port);
 
-	private slots:
-		void TickNow();
-
 	private:
 		[[nodiscard]] static Error::Api::ErrorCondition GetNotReadyCondition();
 		[[nodiscard]] static bool IsNotReadyError(const Error::Api::Error& error);
@@ -69,9 +63,6 @@ namespace PiSubmarine::Operator::Station::Video
 		::PiSubmarine::Video::Subscription::Api::IService& m_SubscriptionService;
 		std::shared_ptr<IPipelineBuilder> m_PipelineBuilder;
 		std::unique_ptr<IPipeline> m_Pipeline;
-		QTimer m_Timer;
-		std::chrono::steady_clock::time_point m_StartTime{};
-		std::chrono::steady_clock::time_point m_LastTickTime{};
 		std::optional<::PiSubmarine::Lease::Api::LeaseGrant> m_LeaseGrant;
 		std::chrono::nanoseconds m_NextLeaseRenewal{0};
 		std::chrono::nanoseconds m_NextRetryTime{0};

@@ -37,10 +37,6 @@ namespace PiSubmarine::Operator::Station::Video
         {
             throw std::invalid_argument("Video controller requires logger and pipeline builder");
         }
-
-        m_Timer.setParent(this);
-        m_Timer.setInterval(16);
-        connect(&m_Timer, &QTimer::timeout, this, &Controller::TickNow);
     }
 
     Controller::~Controller()
@@ -58,10 +54,6 @@ namespace PiSubmarine::Operator::Station::Video
         m_IsStarted = true;
         m_IsDirty = true;
         m_NextRetryTime = std::chrono::nanoseconds::zero();
-        m_StartTime = std::chrono::steady_clock::now();
-        m_LastTickTime = m_StartTime;
-
-        m_Timer.start();
     }
 
     void Controller::Stop()
@@ -74,9 +66,6 @@ namespace PiSubmarine::Operator::Station::Video
             }
             return;
         }
-
-        // TODO Make sure that the timer is stopped in the same thread where timer belongs
-        m_Timer.stop();
 
         if (!m_IsStarted && !m_Pipeline && !m_LeaseGrant.has_value())
         {
@@ -149,15 +138,6 @@ namespace PiSubmarine::Operator::Station::Video
             .IsSubscribed = m_IsSubscribed,
             .IsPipelineRunning = m_Pipeline != nullptr && m_Pipeline->IsRunning(),
             .LeaseId = m_LeaseGrant.has_value() ? std::optional(m_LeaseGrant->Lease.Id) : std::nullopt};
-    }
-
-    void Controller::TickNow()
-    {
-        const auto now = std::chrono::steady_clock::now();
-        const auto uptime = std::chrono::duration_cast<std::chrono::nanoseconds>(now - m_StartTime);
-        const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(now - m_LastTickTime);
-        m_LastTickTime = now;
-        Tick(uptime, delta);
     }
 
     void Controller::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)

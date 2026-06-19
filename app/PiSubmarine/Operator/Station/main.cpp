@@ -1,3 +1,4 @@
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -6,6 +7,7 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QGuiApplication>
+#include <QRegularExpression>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickItem>
@@ -31,6 +33,7 @@
 #include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/Controller.h"
+#include "PiSubmarine/Operator/Station/Time/TickRunner.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Lamp/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Motor/ViewModel.h"
@@ -76,6 +79,44 @@ namespace
         if (normalizedValue == "off")
         {
             return spdlog::level::off;
+        }
+
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::optional<std::chrono::nanoseconds> ParseDuration(const QString& value)
+    {
+        static const QRegularExpression Pattern(R"(^\s*(\d+)\s*(ns|us|ms|s)\s*$)");
+
+        const auto match = Pattern.match(value.trimmed().toLower());
+        if (!match.hasMatch())
+        {
+            return std::nullopt;
+        }
+
+        bool ok = false;
+        const auto count = match.captured(1).toULongLong(&ok);
+        if (!ok || count == 0)
+        {
+            return std::nullopt;
+        }
+
+        const auto unit = match.captured(2);
+        if (unit == "ns")
+        {
+            return std::chrono::nanoseconds(count);
+        }
+        if (unit == "us")
+        {
+            return std::chrono::microseconds(count);
+        }
+        if (unit == "ms")
+        {
+            return std::chrono::milliseconds(count);
+        }
+        if (unit == "s")
+        {
+            return std::chrono::seconds(count);
         }
 
         return std::nullopt;
@@ -138,6 +179,11 @@ int main(int argc, char* argv[])
         "Set application log level: trace, debug, info, warn, error, critical, off.",
         "level",
         "info"));
+    parser.addOption(QCommandLineOption(
+        "tickrate",
+        "Set controllers thread tick period. Supported units: ns, us, ms, s.",
+        "duration",
+        "10ms"));
     parser.addOption(QCommandLineOption("video-bind-address", "Local RTP bind address.", "address", "0.0.0.0"));
     parser.addOption(QCommandLineOption("video-port", "Local RTP bind port.", "port", "5004"));
     parser.addOption(QCommandLineOption("telemetry-port", "Local telemetry subscription port.", "port", "6100"));
@@ -147,6 +193,13 @@ int main(int argc, char* argv[])
     if (!logLevel.has_value())
     {
         qCritical("Invalid --log-level value. Use one of: trace, debug, info, warn, error, critical, off.");
+        return 1;
+    }
+
+    const auto tickPeriod = ParseDuration(parser.value("tickrate"));
+    if (!tickPeriod.has_value())
+    {
+        qCritical("Invalid --tickrate value. Use a positive duration with units ns, us, ms, or s.");
         return 1;
     }
 
@@ -268,6 +321,20 @@ int main(int argc, char* argv[])
     auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
         fakeInputSink,
         loggerFactory);
+    auto controllerTickRunner = std::make_unique<PiSubmarine::Operator::Station::Time::TickRunner>(
+        *tickPeriod,
+        loggerFactory);
+
+    if (!controllerTickRunner->AddTickable(*videoController).has_value())
+    {
+        logger->error("Failed to add video controller to controllers tick runner");
+        return 1;
+    }
+    if (!controllerTickRunner->AddTickable(*telemetryController).has_value())
+    {
+        logger->error("Failed to add telemetry controller to controllers tick runner");
+        return 1;
+    }
 
     QObject::connect(
         &videoViewModel,
@@ -318,15 +385,36 @@ int main(int argc, char* argv[])
     batteryTelemetryController->moveToThread(&controllerThread);
     telemetryController->moveToThread(&controllerThread);
     inputController->moveToThread(&controllerThread);
+    controllerTickRunner->moveToThread(&controllerThread);
 
-    QObject::connect(&controllerThread, &QThread::started, videoController.get(), &PiSubmarine::Operator::Station::Video::Controller::Start);
-    QObject::connect(&controllerThread, &QThread::started, telemetryController.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Start);
+    QObject::connect(
+        &controllerThread,
+        &QThread::started,
+        videoController.get(),
+        &PiSubmarine::Operator::Station::Video::Controller::Start,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controllerThread,
+        &QThread::started,
+        telemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::Controller::Start,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controllerThread,
+        &QThread::started,
+        controllerTickRunner.get(),
+        &PiSubmarine::Operator::Station::Time::TickRunner::Start,
+        Qt::QueuedConnection);
     leaseThread.start();
     controllerThread.start();
 
     QObject::connect(&application, &QGuiApplication::aboutToQuit, &application, [&]()
     {
         // TODO Controllers' destruction flow looks inconsistent between each other.
+        QMetaObject::invokeMethod(
+            controllerTickRunner.get(),
+            &PiSubmarine::Operator::Station::Time::TickRunner::Stop,
+            Qt::BlockingQueuedConnection);
         QMetaObject::invokeMethod(videoController.get(), &PiSubmarine::Operator::Station::Video::Controller::Stop, Qt::BlockingQueuedConnection);
         QMetaObject::invokeMethod(telemetryController.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Stop, Qt::BlockingQueuedConnection);
 
@@ -339,6 +427,7 @@ int main(int argc, char* argv[])
         DeleteLaterOnObjectThread(batteryTelemetryController);
         DeleteLaterOnObjectThread(telemetryController);
         DeleteLaterOnObjectThread(inputController);
+        DeleteLaterOnObjectThread(controllerTickRunner);
 
         controllerThread.quit();
         controllerThread.wait();

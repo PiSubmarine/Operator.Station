@@ -35,6 +35,7 @@ PiSubmarineAddDependency("https://github.com/PiSubmarine/Lamp.Telemetry.Api.git"
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Lease.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Logging.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Motor.Telemetry.Api.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Time.Manager.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Time.Tickable.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Units.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Subscription.Api.git" "")
@@ -69,6 +70,8 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/LampController.h
         PiSubmarine/Operator/Station/Telemetry/MotorController.cpp
         PiSubmarine/Operator/Station/Telemetry/MotorController.h
+        PiSubmarine/Operator/Station/Time/TickRunner.cpp
+        PiSubmarine/Operator/Station/Time/TickRunner.h
         PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.h
@@ -123,6 +126,7 @@ target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.La
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Lease.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Logging.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Motor.Telemetry.Api)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Time.Manager)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Time.Tickable.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Units)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Video.Subscription.Api)

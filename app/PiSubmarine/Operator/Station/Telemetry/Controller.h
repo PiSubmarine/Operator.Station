@@ -6,11 +6,11 @@
 #include <vector>
 
 #include <QObject>
-#include <QTimer>
 
 #include "PiSubmarine/Error/Api/Error.h"
 #include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
+#include "PiSubmarine/Time/ITickable.h"
 
 namespace spdlog
 {
@@ -23,7 +23,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
     class MotorController;
     class BatteryController;
 
-    class Controller : public QObject
+    class Controller : public QObject, public ::PiSubmarine::Time::ITickable
     {
         Q_OBJECT
 
@@ -41,10 +41,8 @@ namespace PiSubmarine::Operator::Station::Telemetry
         void Start();
         void Stop();
 
-    private slots:
-        void Tick();
-
     private:
+        void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
         [[nodiscard]] static bool IsNotReadyError(const Error::Api::Error& error);
         [[nodiscard]] Error::Api::Result<void> EnsureLease(const std::chrono::nanoseconds& uptime);
         void RenewLease(const std::chrono::nanoseconds& uptime);
@@ -54,8 +52,6 @@ namespace PiSubmarine::Operator::Station::Telemetry
         std::vector<std::reference_wrapper<MotorController>> m_MotorControllers;
         BatteryController& m_BatteryController;
         std::shared_ptr<spdlog::logger> m_Logger;
-        QTimer m_Timer;
-        std::chrono::steady_clock::time_point m_StartTime{};
         std::optional<::PiSubmarine::Lease::Api::Lease> m_Lease;
         std::chrono::nanoseconds m_NextRenewal{0};
         bool m_IsStarted = false;

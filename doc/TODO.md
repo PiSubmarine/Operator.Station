@@ -1,18 +1,91 @@
-# Adding real PiSubmarine transports
+# Connecting Operator.Station to real PiSubmarine transports
 
-- [ ] Add "--grpc-server <host:port>" CLI option to set the remote gRPC server address.
-- [ ] Add "--telemetry-server <host:port>" CLI option to set the remote Telemetry server address.
-- [ ] Add "--control-server <host:port>" CLI option to set the remote Control server address.
-- [ ] Add "--video-bind <host:port>" CLI option to set the local endpoint for video streaming.
-- [ ] Add --fake-lease CLI option to enable fake lease provider.
-- [ ] Add --fake-telemetry CLI option to enable fake telemetry provider.
-- [ ] Add --fake-control CLI option to enable fake control input sink.
-- [ ] Use Telemetry.Client.Udp as real telemetry provider.
-- [ ] Use Video.Subscription.Grpc.Client as real video subscription client.
-- [ ] Use Control.Client.Udp as real control input client.
-- [ ] Use Grpc.Client to setup gRPC client.
-- [ ] Make sure that the above-mentioned providers are not blocking the UI thread. Use Controllers thread.
-- [ ] Use *.Telemetry.Protobuf deserializers for Lamp, Motor, Battery and other telemetry sub-domains. These deserializers are already available in GitHub and the project directory.
-- [ ] Add telemetry for Proximity sensor (Proximity.Telemetry.Api), Ballast (Ballast.Telemetry.Api), Video (Video.Telemetry.Api), Depth sensor (Depth.Telemetry.Api
-  ).
-- [ ] Make sure to gracefully handle network errors. Temporary unavailability, reconnections must be handled.
+## Current baseline
+
+- [x] Video already runs on a dedicated controllers thread in `main.cpp`.
+- [x] Lease calls already run on a dedicated worker thread via `Lease::ThreadWorker` and `Lease::SyncLeaseIssuerProxy`.
+- [x] Video transport configuration already exists partially as `--video-bind-address <address>` and `--video-port <port>`.
+- [x] Video can already use a real RTP receive pipeline when `--fake-video` is not set.
+- [ ] Lease, telemetry, and control are still wired to fake/local implementations in `main.cpp`.
+- [ ] Video subscription is still wired to the local `LocalVideoSubscriptionService` stub in `main.cpp`.
+
+## CLI and configuration
+
+- [ ] Replace the current split video CLI with the target transport-oriented options:
+  `--grpc-server <host:port>`, `--telemetry-server <host:port>`, `--control-server <host:port>`, `--video-bind <host:port>`.
+- [ ] Add `--tickrate <duration>` CLI option for the controllers-thread tick period, with default `10ms`.
+- [ ] Keep fake toggles for composition-root testing:
+  `--fake-lease`, `--fake-telemetry`, `--fake-control`, `--fake-video`.
+- [ ] Parse `host:port` values into explicit endpoint types instead of passing raw strings through `main.cpp`.
+- [x] Reuse `--grpc-server` for all gRPC services.
+
+## Dependencies and composition root
+
+- [ ] Add missing PiSubmarine dependencies to `app/CMakeLists.txt`:
+  `Lease.Client.Grpc`, `Grpc.Client`, `Telemetry.Client.Udp`, `Control.Client.Udp`,
+  `Battery.Telemetry.Protobuf`, `Lamp.Telemetry.Protobuf`, `Motor.Telemetry.Protobuf`,
+  `Depth.Telemetry.Protobuf`, `Ballast.Telemetry.Protobuf`, `Proximity.Telemetry.Protobuf`,
+  `Video.Telemetry.Protobuf`.
+- [ ] Add any required transport/security dependencies pulled in by the real clients if they are not already reachable through transitive links.
+- [ ] Replace fake/local objects in `main.cpp` with real composition-root wiring behind CLI switches.
+
+## Lease transport
+
+- [ ] Create a real gRPC channel using `PiSubmarine.Grpc.Client`.
+- [ ] Replace `Lease::FakeIssuer` with `Lease::Client::Grpc::Client` when `--fake-lease` is not set.
+- [ ] Keep the existing `Lease::ThreadWorker` + `Lease::SyncLeaseIssuerProxy` boundary so blocking transport work stays off the UI thread.
+
+## Video transport
+
+- [ ] Replace `LocalVideoSubscriptionService` with `Video.Subscription.Grpc.Client::Client`.
+- [ ] Feed the gRPC video subscription client from the real `--grpc-server` endpoint.
+- [ ] Keep the existing RTP pipeline builder path for actual media reception.
+- [ ] Rename the existing video bind CLI to the final `--video-bind <host:port>` shape.
+
+## Control transport
+
+- [ ] Replace `Input::FakeSink` with `Control.Client.Udp::Client` when `--fake-control` is not set.
+- [ ] Add the required serializer, nonce provider, AEAD provider, and UDP sender in the composition root.
+- [ ] Remove lease management from `Input::Controller`; `Control.Client.Udp::Client` must remain the only control lease owner.
+- [ ] Adjust `Control.Client.Udp::Client` to treat `ErrorCondition::NotReady` as in-progress lease work, matching `Telemetry.Client.Udp`.
+- [ ] Make sure `Input::Controller` keeps reporting submit failures clearly when the UDP client is temporarily unavailable.
+
+## Telemetry transport
+
+- [ ] Introduce `Telemetry.Client.Udp::Client` in the composition root when `--fake-telemetry` is not set.
+- [ ] Create `Telemetry.Channels.Api` and move shared telemetry channel ids there.
+- [ ] Add per-channel `Telemetry.Client.Udp::Source` adapters for each domain consumed by the UI.
+- [ ] Replace fake telemetry providers with protobuf deserializers:
+  `Lamp.Telemetry.Protobuf::Deserializer`,
+  `Motor.Telemetry.Protobuf::Deserializer`,
+  `Battery.Telemetry.Protobuf::Deserializer`.
+- [ ] Add new UI telemetry paths for:
+  `Proximity.Telemetry.Api`,
+  `Ballast.Telemetry.Api`,
+  `Video.Telemetry.Api`,
+  `Depth.Telemetry.Api`.
+- [ ] Replace private channel-id definitions in producers/consumers with `Telemetry.Channels.Api`
+  for ids such as `battery.main`, `motor.front-left`, `motor.front-right`, `motor.rear-left`, `motor.rear-right`.
+- [ ] Remove lease handling from `Telemetry::Controller`.
+- [ ] Make `Telemetry::Controller` a pure UI-facing refresh coordinator for telemetry providers/deserializers.
+- [ ] Remove the direct `telemetry-main` lease ownership from `Operator.Station`; telemetry lease/subscription lifecycle must live only inside `Telemetry.Client.Udp::Client`.
+
+## Resilience and lifecycle
+
+- [ ] Treat temporary network failures as retryable for lease, telemetry, control, and video subscription paths.
+- [ ] Verify reconnect behavior after lease loss, server restart, and UDP interruption.
+- [ ] Add a deterministic controllers-thread tick loop based on `PiSubmarine.Time.Manager`, not independent `QTimer`s.
+- [ ] Register tick-driven controller-thread objects in a fixed order so controller behavior stays deterministic under load.
+- [ ] Keep the controllers-thread tick cadence fixed to the configured period even when individual ticks overrun.
+- [ ] Review shutdown flow in `main.cpp`; controller destruction is still noted there as inconsistent.
+- [ ] Ensure all real transport objects are created, used, and destroyed on the intended worker threads.
+
+## Tests
+
+- [ ] Add unit tests for CLI parsing of the new endpoint-shaped options.
+- [ ] Add unit tests for `--tickrate` parsing and validation.
+- [ ] Add unit tests for telemetry channel-to-deserializer wiring.
+- [ ] Add unit tests for composition-root selection between fake and real providers.
+- [ ] Add regression tests for reconnect/retry behavior where the current abstractions allow it.
+- [ ] Verify that controller-layer tick processing continues when any individual domain controller reports an error.
+- [ ] Add user-visible error propagation from controllers to ViewModels via signals and represented error state.

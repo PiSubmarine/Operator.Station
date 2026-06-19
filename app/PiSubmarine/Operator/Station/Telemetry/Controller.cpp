@@ -24,9 +24,6 @@ namespace PiSubmarine::Operator::Station::Telemetry
         , m_BatteryController(batteryController)
         , m_Logger(loggerFactory.CreateLogger("Operator.Station.Telemetry.Controller"))
     {
-        m_Timer.setParent(this);
-        m_Timer.setInterval(200);
-        connect(&m_Timer, &QTimer::timeout, this, &Controller::Tick);
     }
 
     Controller::~Controller()
@@ -48,8 +45,6 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
 
         m_IsStarted = true;
-        m_StartTime = std::chrono::steady_clock::now();
-        m_Timer.start();
     }
 
     void Controller::Stop()
@@ -62,8 +57,6 @@ namespace PiSubmarine::Operator::Station::Telemetry
             }
             return;
         }
-
-        m_Timer.stop();
 
         if (!m_IsStarted && !m_Lease.has_value())
         {
@@ -81,15 +74,14 @@ namespace PiSubmarine::Operator::Station::Telemetry
         m_NextRenewal = std::chrono::nanoseconds::zero();
     }
 
-    void Controller::Tick()
+    void Controller::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)
     {
+        static_cast<void>(deltaTime);
+
         if (!m_IsStarted)
         {
             return;
         }
-
-        const auto uptime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::steady_clock::now() - m_StartTime);
 
         const auto leaseResult = EnsureLease(uptime);
         if (leaseResult.has_value())
