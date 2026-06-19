@@ -145,7 +145,7 @@ namespace PiSubmarine::Operator::Station::Video
         class FakePipelineBuilder final : public IPipelineBuilder
         {
         public:
-            explicit FakePipelineBuilder(Logging::Api::IFactory& loggerFactory)
+            explicit FakePipelineBuilder(PiSubmarine::Logging::Api::IFactory& loggerFactory)
                 : m_LoggerFactory(loggerFactory)
             {
             }
@@ -166,11 +166,11 @@ namespace PiSubmarine::Operator::Station::Video
             }
 
         private:
-            Logging::Api::IFactory& m_LoggerFactory;
+            PiSubmarine::Logging::Api::IFactory& m_LoggerFactory;
         };
     }
 
-    std::shared_ptr<IPipelineBuilder> CreateFakePipelineBuilder(Logging::Api::IFactory& loggerFactory)
+    std::shared_ptr<IPipelineBuilder> CreateFakePipelineBuilder(PiSubmarine::Logging::Api::IFactory& loggerFactory)
     {
         return std::make_shared<FakePipelineBuilder>(loggerFactory);
     }

@@ -24,7 +24,7 @@ namespace PiSubmarine::Operator::Station::Lease
 
     ThreadWorker::ThreadWorker(
         ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
-        Logging::Api::IFactory& loggerFactory,
+        PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
         : QObject(parent)
         , m_LeaseIssuer(leaseIssuer)

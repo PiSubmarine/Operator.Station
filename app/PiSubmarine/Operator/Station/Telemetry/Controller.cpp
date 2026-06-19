@@ -14,7 +14,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         LampController& lampController,
         MotorController& motorController,
         BatteryController& batteryController,
-        Logging::Api::IFactory& loggerFactory,
+        PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
         : QObject(parent)
         , m_LeaseIssuer(leaseIssuer)

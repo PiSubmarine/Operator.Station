@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -12,10 +13,10 @@
 #include <gst/gst.h>
 #include <spdlog/logger.h>
 
-#include "PiSubmarine/Operator/Station/Infrastructure/QtLog.h"
 #include "PiSubmarine/Error/Api/Result.h"
 #include "PiSubmarine/Gstreamer/Build/Plugins.h"
-#include "PiSubmarine/Operator/Station/Infrastructure/SpdlogFactory.h"
+#include "PiSubmarine/Operator/Station/Logging/QtLog.h"
+#include "PiSubmarine/Operator/Station/Logging/SpdlogFactory.h"
 #include "PiSubmarine/Operator/Station/Input/Controller.h"
 #include "PiSubmarine/Operator/Station/Input/FakeSink.h"
 #include "PiSubmarine/Operator/Station/Input/View/ViewModel.h"
@@ -40,6 +41,42 @@
 
 namespace
 {
+    [[nodiscard]] std::optional<spdlog::level::level_enum> ParseLogLevel(const QString& value)
+    {
+        const auto normalizedValue = value.trimmed().toLower();
+
+        if (normalizedValue == "trace")
+        {
+            return spdlog::level::trace;
+        }
+        if (normalizedValue == "debug")
+        {
+            return spdlog::level::debug;
+        }
+        if (normalizedValue == "info")
+        {
+            return spdlog::level::info;
+        }
+        if (normalizedValue == "warn")
+        {
+            return spdlog::level::warn;
+        }
+        if (normalizedValue == "error")
+        {
+            return spdlog::level::err;
+        }
+        if (normalizedValue == "critical")
+        {
+            return spdlog::level::critical;
+        }
+        if (normalizedValue == "off")
+        {
+            return spdlog::level::off;
+        }
+
+        return std::nullopt;
+    }
+
     class LocalVideoSubscriptionService final : public ::PiSubmarine::Video::Subscription::Api::IService
     {
     public:
@@ -86,10 +123,6 @@ namespace
 
 int main(int argc, char* argv[])
 {
-    PiSubmarine::Operator::Station::Infrastructure::SpdlogFactory loggerFactory;
-    auto qtLogger = loggerFactory.CreateLogger("Qt");
-    PiSubmarine::Operator::Station::Infrastructure::InstallQtMessageHandler(qtLogger);
-
     Q_INIT_RESOURCE(qml);
 
     QGuiApplication application(argc, argv);
@@ -97,10 +130,26 @@ int main(int argc, char* argv[])
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addOption(QCommandLineOption("fake-video", "Use a local fake test-pattern video pipeline."));
+    parser.addOption(QCommandLineOption(
+        "log-level",
+        "Set application log level: trace, debug, info, warn, error, critical, off.",
+        "level",
+        "info"));
     parser.addOption(QCommandLineOption("video-bind-address", "Local RTP bind address.", "address", "0.0.0.0"));
     parser.addOption(QCommandLineOption("video-port", "Local RTP bind port.", "port", "5004"));
     parser.addOption(QCommandLineOption("telemetry-port", "Local telemetry subscription port.", "port", "6100"));
     parser.process(application);
+
+    const auto logLevel = ParseLogLevel(parser.value("log-level"));
+    if (!logLevel.has_value())
+    {
+        qCritical("Invalid --log-level value. Use one of: trace, debug, info, warn, error, critical, off.");
+        return 1;
+    }
+
+    PiSubmarine::Operator::Station::Logging::SpdlogFactory loggerFactory(*logLevel);
+    auto qtLogger = loggerFactory.CreateLogger("Qt");
+    PiSubmarine::Operator::Station::Logging::InstallQtMessageHandler(qtLogger);
 
 
     const auto logger = loggerFactory.CreateLogger("Operator.Station.Main");

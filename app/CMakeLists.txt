@@ -40,7 +40,10 @@ PiSubmarineAddDependency("https://github.com/PiSubmarine/Units.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Subscription.Api.git" "")
 
 add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
-        PiSubmarine/Operator/Station/Infrastructure/SpdlogFactory.h
+        PiSubmarine/Operator/Station/Logging/QtLog.cpp
+        PiSubmarine/Operator/Station/Logging/QtLog.h
+        PiSubmarine/Operator/Station/Logging/SpdlogFactory.cpp
+        PiSubmarine/Operator/Station/Logging/SpdlogFactory.h
         PiSubmarine/Operator/Station/Input/Controller.cpp
         PiSubmarine/Operator/Station/Input/Controller.h
         PiSubmarine/Operator/Station/Input/FakeSink.cpp
@@ -102,12 +105,12 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/View/qml.qrc
         PiSubmarine/Operator/Station/View/qml/Main.qml
         PiSubmarine/Operator/Station/View/qml/Main.Windows.qml
-        PiSubmarine/Operator/Station/Infrastructure/QtLog.cpp
-        PiSubmarine/Operator/Station/Infrastructure/QtLog.h
         PiSubmarine/Operator/Station/Video/GstreamerPipeline.cpp
         PiSubmarine/Operator/Station/Video/GstreamerPipeline.h)
 PiSubmarineInitTarget(${PISUBMARINE_MODULE_NAME}.AppCommon)
 target_include_directories(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC ./)
+target_compile_options(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC
+        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC spdlog::spdlog)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Battery.Telemetry.Api)
@@ -150,6 +153,8 @@ add_executable(${PISUBMARINE_MODULE_NAME}.App
         PiSubmarine/Operator/Station/main.cpp)
 PiSubmarineInitTarget(${PISUBMARINE_MODULE_NAME}.App)
 target_include_directories(${PISUBMARINE_MODULE_NAME}.App PRIVATE ./)
+target_compile_options(${PISUBMARINE_MODULE_NAME}.App PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.App PRIVATE ${PISUBMARINE_MODULE_NAME}.AppCommon)
 if(TARGET PkgConfig::GSTREAMER_APP)
     target_link_libraries(${PISUBMARINE_MODULE_NAME}.App PRIVATE PkgConfig::GSTREAMER_APP)

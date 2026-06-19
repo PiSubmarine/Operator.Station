@@ -35,7 +35,7 @@ namespace PiSubmarine::Operator::Station::Video
 	public:
 		Controller(
 			Config config,
-			Logging::Api::IFactory& loggerFactory,
+			PiSubmarine::Logging::Api::IFactory& loggerFactory,
 			::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
 			::PiSubmarine::Video::Subscription::Api::IService& subscriptionService,
 			std::shared_ptr<IPipelineBuilder> pipelineBuilder,

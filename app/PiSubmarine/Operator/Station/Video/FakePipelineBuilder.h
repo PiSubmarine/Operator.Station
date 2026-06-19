@@ -7,5 +7,5 @@
 
 namespace PiSubmarine::Operator::Station::Video
 {
-    [[nodiscard]] std::shared_ptr<IPipelineBuilder> CreateFakePipelineBuilder(Logging::Api::IFactory& loggerFactory);
+    [[nodiscard]] std::shared_ptr<IPipelineBuilder> CreateFakePipelineBuilder(PiSubmarine::Logging::Api::IFactory& loggerFactory);
 }

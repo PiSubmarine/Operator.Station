@@ -1,16 +1,17 @@
-#include "PiSubmarine/Operator/Station/Infrastructure/QtLog.h"
+#include "PiSubmarine/Operator/Station/Logging/QtLog.h"
 
 #include <memory>
+
+#include <QString>
 #include <spdlog/logger.h>
 #include <spdlog/spdlog.h>
-#include <QString>
 
 namespace
 {
     std::shared_ptr<spdlog::logger> QtLogger;
     QtMessageHandler PreviousQtHandler = nullptr;
 
-    spdlog::level::level_enum toSpdlogLevel(QtMsgType type)
+    spdlog::level::level_enum ToSpdlogLevel(const QtMsgType type)
     {
         switch (type)
         {
@@ -29,8 +30,8 @@ namespace
         return spdlog::level::info;
     }
 
-    void qtMessageHandler(
-        QtMsgType type,
+    void QtMessageHandlerFunction(
+        const QtMsgType type,
         const QMessageLogContext& context,
         const QString& message)
     {
@@ -38,38 +39,27 @@ namespace
 
         if (logger)
         {
-            const auto level = toSpdlogLevel(type);
-
-            // Qt category, file, function and line may be null / 0,
-            // especially in release builds.
+            const auto level = ToSpdlogLevel(type);
             const char* category = context.category ? context.category : "qt";
             const char* file = context.file ? context.file : "";
             const char* function = context.function ? context.function : "";
-            int line = context.line;
 
             logger->log(
-                spdlog::source_loc{file, line, function},
+                spdlog::source_loc{file, static_cast<int>(context.line), function},
                 level,
                 "[{}] {}",
                 category,
                 message.toStdString());
         }
-
-        // Optional: also call the original Qt handler.
-        // Usually disable this to avoid duplicate console output.
-        /*
-        if (PreviousQtHandler)
-            PreviousQtHandler(type, context, message);
-        */
     }
 }
 
-namespace PiSubmarine::Operator::Station::Infrastructure
+namespace PiSubmarine::Operator::Station::Logging
 {
     void InstallQtMessageHandler(std::shared_ptr<spdlog::logger> logger)
     {
         QtLogger = std::move(logger);
-        PreviousQtHandler = qInstallMessageHandler(qtMessageHandler);
+        PreviousQtHandler = qInstallMessageHandler(QtMessageHandlerFunction);
     }
 
     void UninstallQtMessageHandler()

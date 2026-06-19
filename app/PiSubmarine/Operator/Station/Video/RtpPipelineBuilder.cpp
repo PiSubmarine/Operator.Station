@@ -12,7 +12,7 @@ namespace PiSubmarine::Operator::Station::Video
         class RtpPipelineBuilder final : public IPipelineBuilder
         {
         public:
-            explicit RtpPipelineBuilder(Logging::Api::IFactory& loggerFactory)
+            explicit RtpPipelineBuilder(PiSubmarine::Logging::Api::IFactory& loggerFactory)
                 : m_LoggerFactory(loggerFactory)
             {
             }
@@ -31,11 +31,11 @@ namespace PiSubmarine::Operator::Station::Video
             }
 
         private:
-            Logging::Api::IFactory& m_LoggerFactory;
+            PiSubmarine::Logging::Api::IFactory& m_LoggerFactory;
         };
     }
 
-    std::shared_ptr<IPipelineBuilder> CreateRtpPipelineBuilder(Logging::Api::IFactory& loggerFactory)
+    std::shared_ptr<IPipelineBuilder> CreateRtpPipelineBuilder(PiSubmarine::Logging::Api::IFactory& loggerFactory)
     {
         return std::make_shared<RtpPipelineBuilder>(loggerFactory);
     }

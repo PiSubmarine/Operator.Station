@@ -17,7 +17,7 @@ namespace PiSubmarine::Operator::Station::Input
     Controller::Controller(
         ::PiSubmarine::Control::Api::Input::ISink& sink,
         View::ViewModel& viewModel,
-        Logging::Api::IFactory& loggerFactory,
+        PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
         : QObject(parent)
         , m_Sink(sink)

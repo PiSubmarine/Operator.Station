@@ -20,6 +20,6 @@ namespace PiSubmarine::Operator::Station::Telemetry
 	[[nodiscard]] FakeParts CreateFakeController(
 		::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
 		ISubscriptionService& subscriptionService,
-		Logging::Api::IFactory& loggerFactory,
+		PiSubmarine::Logging::Api::IFactory& loggerFactory,
 		QObject* parent = nullptr);
 }
