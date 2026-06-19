@@ -32,7 +32,8 @@
 #include "PiSubmarine/Operator/Station/Telemetry/View/Lamp/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Motor/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/Controller.h"
-#include "PiSubmarine/Operator/Station/Video/FakeController.h"
+#include "PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h"
+#include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
 #include "PiSubmarine/Operator/Station/Video/RtpPipelineBuilder.h"
 #include "PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.h"
 #include "PiSubmarine/Operator/Station/Video/View/ViewModel.h"
@@ -98,27 +99,6 @@ namespace
         ::PiSubmarine::Video::Subscription::Api::SubscribeRequest m_LastRequest{};
         ::PiSubmarine::Lease::Api::LeaseId m_LastLeaseId{};
     };
-
-    // TODO Move to GstreamerPipeline. Rename to EnsureGstreamerInitialized
-    bool EnsureGstreamerReadyForQml(const std::shared_ptr<spdlog::logger>& logger)
-    {
-        GError* error = nullptr;
-        if (!gst_is_initialized() && !gst_init_check(nullptr, nullptr, &error))
-        {
-            if (logger && error != nullptr)
-            {
-                logger->error("gst_init_check failed: {}", error->message);
-            }
-            if (error != nullptr)
-            {
-                g_error_free(error);
-            }
-            return false;
-        }
-
-        ::PiSubmarine::Gstreamer::Build::Plugins::RegisterStatic(logger);
-        return true;
-    }
 }
 
 int main(int argc, char* argv[])
@@ -153,7 +133,7 @@ int main(int argc, char* argv[])
 
 
     const auto logger = loggerFactory.CreateLogger("Operator.Station.Main");
-    if (!logger || !EnsureGstreamerReadyForQml(logger))
+    if (!logger || !PiSubmarine::Operator::Station::Video::GstreamerPipeline::EnsureGstreamerInitialized(logger))
     {
         return 1;
     }
@@ -191,14 +171,14 @@ int main(int argc, char* argv[])
     engine.load(mainWindowUrl);
     if (engine.rootObjects().isEmpty())
     {
-        // TODO Add error log line
+        logger->error("Failed to load main QML window");
         return 1;
     }
 
     auto* videoItem = engine.rootObjects().front()->findChild<QQuickItem*>("videoSurface");
     if (videoItem == nullptr)
     {
-        // TODO Add error log line
+        logger->error("Failed to locate QML video surface item");
         return 1;
     }
 
@@ -224,27 +204,15 @@ int main(int argc, char* argv[])
         .Host = videoViewModel.GetSubscriptionHost().toStdString(),
         .Port = videoViewModel.GetSubscriptionPort()};
 
-    std::unique_ptr<PiSubmarine::Operator::Station::Video::Controller> videoController;
-
-    // TODO Simplify. We don't actually have Fake Video Controller. CreateFakeController creates the same Controller, but injects Fake pipeline in it. Remove CreateFakeController function, unify Controller creation.
-    if (parser.isSet("fake-video"))
-    {
-        videoController = PiSubmarine::Operator::Station::Video::CreateFakeController(
-            videoConfig,
-            loggerFactory,
-            leaseProxy,
-            videoSubscriptionService,
-            videoTailFactory);
-    }
-    else
-    {
-        videoController = std::make_unique<PiSubmarine::Operator::Station::Video::Controller>(
-            videoConfig,
-            loggerFactory,
-            leaseProxy,
-            videoSubscriptionService,
-            PiSubmarine::Operator::Station::Video::CreateRtpPipelineBuilder(loggerFactory, videoTailFactory));
-    }
+    const auto videoPipelineBuilder = parser.isSet("fake-video")
+        ? PiSubmarine::Operator::Station::Video::CreateFakePipelineBuilder(loggerFactory, videoTailFactory)
+        : PiSubmarine::Operator::Station::Video::CreateRtpPipelineBuilder(loggerFactory, videoTailFactory);
+    auto videoController = std::make_unique<PiSubmarine::Operator::Station::Video::Controller>(
+        videoConfig,
+        loggerFactory,
+        leaseProxy,
+        videoSubscriptionService,
+        videoPipelineBuilder);
 
     auto telemetryParts = PiSubmarine::Operator::Station::Telemetry::CreateFakeController(
         leaseProxy,

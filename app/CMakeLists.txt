@@ -84,8 +84,8 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Video/Config.h
         PiSubmarine/Operator/Station/Video/Controller.cpp
         PiSubmarine/Operator/Station/Video/Controller.h
-        PiSubmarine/Operator/Station/Video/FakeController.cpp
-        PiSubmarine/Operator/Station/Video/FakeController.h
+        PiSubmarine/Operator/Station/Video/FakePipeline.cpp
+        PiSubmarine/Operator/Station/Video/FakePipeline.h
         PiSubmarine/Operator/Station/Video/FakePipelineBuilder.cpp
         PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h
         PiSubmarine/Operator/Station/Video/RtpPipeline.cpp
@@ -144,6 +144,7 @@ foreach(_gstreamer_plugin IN ITEMS
 endforeach()
 
 if(WIN32)
+    PiSubmarineGstreamerAddPlugin(${PISUBMARINE_MODULE_NAME}.AppCommon d3d11)
     PiSubmarineGstreamerAddPlugin(${PISUBMARINE_MODULE_NAME}.AppCommon mediafoundation)
 else()
     PiSubmarineGstreamerAddPlugin(${PISUBMARINE_MODULE_NAME}.AppCommon video4linux2)

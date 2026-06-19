@@ -1,25 +1,14 @@
 #include "PiSubmarine/Operator/Station/Video/RtpPipeline.h"
 
-#include <mutex>
 #include <stdexcept>
+#include <utility>
 
-#include <spdlog/spdlog.h>
-
-#include "PiSubmarine/Error/Api/MakeError.h"
 #include "PiSubmarine/Operator/Station/Video/IVideoPipelineTailFactory.h"
 
 namespace PiSubmarine::Operator::Station::Video
 {
 	namespace
 	{
-		std::once_flag GstreamerInitFlag;
-		bool GstreamerInitialized = false;
-
-		[[nodiscard]] Error::Api::Error MakePipelineError()
-		{
-			return Error::Api::MakeError(Error::Api::ErrorCondition::DeviceError);
-		}
-
 		[[nodiscard]] GstCaps* CreateRtpCaps()
 		{
 			return gst_caps_from_string("application/x-rtp,media=video,encoding-name=H264,payload=96");
@@ -30,9 +19,9 @@ namespace PiSubmarine::Operator::Station::Video
 		const ReceiveEndpoint& receiveEndpoint,
 		IVideoPipelineTailFactory& tailFactory,
 		PiSubmarine::Logging::Api::IFactory& loggerFactory)
-		: m_Logger(loggerFactory.CreateLogger("Operator.Station.Video.Gst"))
+		: GstreamerPipeline(loggerFactory.CreateLogger("Operator.Station.Video.Gst"))
 	{
-		if (!InitializeGstreamer(m_Logger))
+		if (!EnsureGstreamerInitialized(GetLogger()))
 		{
 			throw std::runtime_error("Failed to initialize GStreamer");
 		}
@@ -49,58 +38,6 @@ namespace PiSubmarine::Operator::Station::Video
 		static_cast<void>(Stop());
 	}
 
-	Error::Api::Result<void> RtpPipeline::Stop()
-	{
-		if (!m_Pipeline)
-		{
-			return {};
-		}
-
-		gst_element_set_state(m_Pipeline.get(), GST_STATE_NULL);
-		m_Tail = nullptr;
-		m_Pipeline.reset();
-		return {};
-	}
-
-	void RtpPipeline::PollBus()
-	{
-		if (m_Pipeline)
-		{
-			DrainBusMessages();
-		}
-	}
-
-	// TODO do not rely on pointer. Check actual pipeline state.
-	bool RtpPipeline::IsRunning() const noexcept
-	{
-		return m_Pipeline != nullptr;
-	}
-
-	bool RtpPipeline::InitializeGstreamer(const std::shared_ptr<spdlog::logger>& logger)
-	{
-		std::call_once(GstreamerInitFlag, [&logger]
-		{
-			GError* error = nullptr;
-			GstreamerInitialized = gst_init_check(nullptr, nullptr, &error);
-			if (!GstreamerInitialized && error != nullptr)
-			{
-				if (logger)
-				{
-					SPDLOG_LOGGER_ERROR(logger, "gst_init_check failed: {}", error->message);
-				}
-				g_error_free(error);
-			}
-		});
-
-		return GstreamerInitialized;
-	}
-
-	// TODO Move to GstreamerPipeline class
-	RtpPipeline::GstElementPtr RtpPipeline::CreateElement(const char* factoryName, const char* elementName)
-	{
-		return GstElementPtr(gst_element_factory_make(factoryName, elementName));
-	}
-
 	Error::Api::Result<void> RtpPipeline::BuildPipeline(
 		const ReceiveEndpoint& receiveEndpoint,
 		IVideoPipelineTailFactory& tailFactory)
@@ -113,29 +50,30 @@ namespace PiSubmarine::Operator::Station::Video
 		auto decoder = CreateElement("openh264dec", "decoder");
 		auto converter = CreateElement("videoconvert", "converter");
 		auto queue = CreateElement("queue", "tail_input");
+        auto tailResult = CreateTail(tailFactory);
 
-		if (!pipeline || !source || !jitterBuffer || !depayloader || !parser || !decoder || !converter || !queue)
+		if (!pipeline || !source || !jitterBuffer || !depayloader || !parser || !decoder || !converter || !queue || !tailResult.has_value())
 		{
-			return std::unexpected(MakePipelineError());
+			return std::unexpected(tailResult.has_value() ? MakeDeviceError() : tailResult.error());
 		}
 
-		// TODO make tail injection common through GstreamerPipeline class
-		const auto tailResult = tailFactory.CreatePipelineTail();
-		if (!tailResult.has_value() || *tailResult == nullptr)
-		{
-			return std::unexpected(tailResult.has_value() ? MakePipelineError() : tailResult.error());
-		}
-
-		GstElement* tail = *tailResult;
+		auto tail = std::move(*tailResult);
+        auto* sourceElement = source.get();
+        auto* jitterBufferElement = jitterBuffer.get();
+        auto* depayloaderElement = depayloader.get();
+        auto* parserElement = parser.get();
+        auto* decoderElement = decoder.get();
+        auto* converterElement = converter.get();
+        auto* queueElement = queue.get();
+        auto* tailElement = tail.get();
 		GstCaps* caps = CreateRtpCaps();
 		if (caps == nullptr)
 		{
-			gst_object_unref(tail);
-			return std::unexpected(MakePipelineError());
+			return std::unexpected(MakeDeviceError());
 		}
 
 		g_object_set(
-			source.get(),
+			sourceElement,
 			"address",
 			receiveEndpoint.BindAddress.c_str(),
 			"port",
@@ -147,29 +85,28 @@ namespace PiSubmarine::Operator::Station::Video
 
 		gst_bin_add_many(
 			GST_BIN(pipeline.get()),
-			source.get(),
-			jitterBuffer.get(),
-			depayloader.get(),
-			parser.get(),
-			decoder.get(),
-			converter.get(),
-			queue.get(),
-			tail,
+			sourceElement,
+			jitterBufferElement,
+			depayloaderElement,
+			parserElement,
+			decoderElement,
+			converterElement,
+			queueElement,
+			tailElement,
 			nullptr);
 
 		if (!gst_element_link_many(
-				source.get(),
-				jitterBuffer.get(),
-				depayloader.get(),
-				parser.get(),
-				decoder.get(),
-				converter.get(),
-				queue.get(),
+				sourceElement,
+				jitterBufferElement,
+				depayloaderElement,
+				parserElement,
+				decoderElement,
+				converterElement,
+				queueElement,
 				nullptr) ||
-			!gst_element_link(queue.get(), tail))
+			!gst_element_link(queueElement, tailElement))
 		{
-			gst_object_unref(tail);
-			return std::unexpected(MakePipelineError());
+			return std::unexpected(MakeDeviceError());
 		}
 
 		ReleaseOwnership(source);
@@ -179,99 +116,9 @@ namespace PiSubmarine::Operator::Station::Video
 		ReleaseOwnership(decoder);
 		ReleaseOwnership(converter);
 		ReleaseOwnership(queue);
+        ReleaseOwnership(tail);
 
-		// TODO Since we already have Pipeline::Stop(), move this to Pipeline::Play(). Constructor should only construct, not change state.
-		if (gst_element_set_state(pipeline.get(), GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
-		{
-			gst_object_unref(tail);
-			// TODO DrainBusMessages will not show any error because m_Pipeline = std::move(pipeline) is never reached
-			return std::unexpected(MakePipelineError());
-		}
-
-		m_Tail = tail;
-		m_Pipeline = std::move(pipeline);
-		return {};
-	}
-
-	void RtpPipeline::DrainBusMessages()
-	{
-		GstObjectPtr bus(GST_OBJECT(gst_element_get_bus(m_Pipeline.get())));
-		if (!bus)
-		{
-			return;
-		}
-
-		while (auto* message = gst_bus_pop(GST_BUS(bus.get())))
-		{
-			switch (GST_MESSAGE_TYPE(message))
-			{
-			case GST_MESSAGE_ERROR:
-				{
-					GError* error = nullptr;
-					gchar* debug = nullptr;
-					gst_message_parse_error(message, &error, &debug);
-					SPDLOG_LOGGER_ERROR(
-						m_Logger,
-						"GStreamer pipeline error: {} ({})",
-						error != nullptr ? error->message : "unknown",
-						debug != nullptr ? debug : "no debug");
-					if (error != nullptr)
-					{
-						g_error_free(error);
-					}
-					if (debug != nullptr)
-					{
-						g_free(debug);
-					}
-					break;
-				}
-			case GST_MESSAGE_WARNING:
-				{
-					GError* error = nullptr;
-					gchar* debug = nullptr;
-					gst_message_parse_warning(message, &error, &debug);
-					SPDLOG_LOGGER_WARN(
-						m_Logger,
-						"GStreamer pipeline warning: {} ({})",
-						error != nullptr ? error->message : "unknown",
-						debug != nullptr ? debug : "no debug");
-					if (error != nullptr)
-					{
-						g_error_free(error);
-					}
-					if (debug != nullptr)
-					{
-						g_free(debug);
-					}
-					break;
-				}
-			case GST_MESSAGE_INFO:
-				{
-					GError* error = nullptr;
-					gchar* debug = nullptr;
-					gst_message_parse_info(message, &error, &debug);
-					SPDLOG_LOGGER_INFO(
-						m_Logger,
-						"GStreamer pipeline info: {} ({})",
-						error != nullptr ? error->message : "unknown",
-						debug != nullptr ? debug : "no debug info");
-					if (error != nullptr)
-					{
-						g_error_free(error);
-					}
-
-					if (debug != nullptr)
-					{
-						g_free(debug);
-					}
-
-					break;
-				}
-			default:
-				break;
-			}
-
-			gst_message_unref(message);
-		}
+        SetPipeline(std::move(pipeline));
+        return {};
 	}
 }
