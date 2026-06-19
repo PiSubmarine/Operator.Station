@@ -260,6 +260,18 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Video::Controller::SetSubscriptionEndpoint,
         Qt::QueuedConnection);
     QObject::connect(
+        videoItem,
+        &QQuickItem::widthChanged,
+        videoController.get(),
+        &PiSubmarine::Operator::Station::Video::Controller::InvalidatePipeline,
+        Qt::QueuedConnection);
+    QObject::connect(
+        videoItem,
+        &QQuickItem::heightChanged,
+        videoController.get(),
+        &PiSubmarine::Operator::Station::Video::Controller::InvalidatePipeline,
+        Qt::QueuedConnection);
+    QObject::connect(
         telemetryParts.Lamp.get(),
         &PiSubmarine::Operator::Station::Telemetry::LampController::SnapshotChanged,
         &lampTelemetryViewModel,

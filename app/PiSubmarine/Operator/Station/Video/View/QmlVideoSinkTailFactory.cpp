@@ -1,6 +1,8 @@
 #include "PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.h"
 
+#include <QMetaObject>
 #include <QQuickWindow>
+#include <QThread>
 
 #include <gst/gst.h>
 #include <spdlog/spdlog.h>
@@ -32,6 +34,38 @@ namespace PiSubmarine::Operator::Station::Video::View
 
     Error::Api::Result<GstElement*> QmlVideoSinkTailFactory::CreatePipelineTail()
     {
+        auto* itemThread = m_VideoSurfaceItem.thread();
+        if (itemThread == nullptr)
+        {
+            SPDLOG_LOGGER_ERROR(m_Logger, "Video surface item is not attached to a Qt thread");
+            return std::unexpected(MakeDeviceError());
+        }
+
+        if (QThread::currentThread() == itemThread)
+        {
+            return CreatePipelineTailOnItemThread();
+        }
+
+        Error::Api::Result<GstElement*> result = std::unexpected(MakeDeviceError());
+        const auto invoked = QMetaObject::invokeMethod(
+            &m_VideoSurfaceItem,
+            [this, &result]()
+            {
+                result = CreatePipelineTailOnItemThread();
+            },
+            Qt::BlockingQueuedConnection);
+
+        if (!invoked)
+        {
+            SPDLOG_LOGGER_ERROR(m_Logger, "Failed to invoke video tail creation on the QML item thread");
+            return std::unexpected(MakeDeviceError());
+        }
+
+        return result;
+    }
+
+    Error::Api::Result<GstElement*> QmlVideoSinkTailFactory::CreatePipelineTailOnItemThread()
+    {
         auto* window = m_VideoSurfaceItem.window();
         if (window == nullptr)
         {
@@ -42,6 +76,16 @@ namespace PiSubmarine::Operator::Station::Video::View
         if (!window->isExposed())
         {
             SPDLOG_LOGGER_DEBUG(m_Logger, "Video surface window is not exposed yet");
+            return std::unexpected(MakeNotReadyError());
+        }
+
+        if (m_VideoSurfaceItem.width() <= 0.0 || m_VideoSurfaceItem.height() <= 0.0)
+        {
+            SPDLOG_LOGGER_DEBUG(
+                m_Logger,
+                "Video surface item size is not ready yet: {}x{}",
+                m_VideoSurfaceItem.width(),
+                m_VideoSurfaceItem.height());
             return std::unexpected(MakeNotReadyError());
         }
 

@@ -18,19 +18,26 @@ ApplicationWindow {
         Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
+            Layout.minimumWidth: 320
+            Layout.preferredWidth: 1000
             color: "#03070b"
             radius: 20
             border.color: "#163348"
+            clip: true
 
             GstD3D11Qt6VideoItem {
                 id: videoSurface
                 objectName: "videoSurface"
-                anchors.fill: parent
+                anchors.centerIn: parent
+                width: parent.width
+                height: parent.height
             }
         }
 
         ColumnLayout {
             Layout.preferredWidth: 380
+            Layout.minimumWidth: 380
+            Layout.maximumWidth: 380
             Layout.fillHeight: true
             spacing: 16
 

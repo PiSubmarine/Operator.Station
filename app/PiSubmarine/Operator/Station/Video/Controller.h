@@ -49,6 +49,7 @@ namespace PiSubmarine::Operator::Station::Video
 		void Stop();
 		void SetReceiveEndpoint(const QString& bindAddress, quint16 port);
 		void SetSubscriptionEndpoint(const QString& host, quint16 port);
+        void InvalidatePipeline();
 
 	private slots:
 		void TickNow();

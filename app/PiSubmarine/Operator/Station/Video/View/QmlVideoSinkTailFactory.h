@@ -20,6 +20,7 @@ namespace PiSubmarine::Operator::Station::Video::View
         [[nodiscard]] Error::Api::Result<GstElement*> CreatePipelineTail() override;
 
     private:
+        [[nodiscard]] Error::Api::Result<GstElement*> CreatePipelineTailOnItemThread();
         [[nodiscard]] Error::Api::Result<GstElement*> CreateWindowsTail();
         [[nodiscard]] Error::Api::Result<GstElement*> CreateLinuxTail();
         [[nodiscard]] static Error::Api::Result<GstElement*> MakeElement(
