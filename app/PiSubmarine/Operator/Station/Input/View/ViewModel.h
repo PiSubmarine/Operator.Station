@@ -31,6 +31,7 @@ namespace PiSubmarine::Operator::Station::Input::View
 
     signals:
         void IntentChanged();
+        void IntentUpdated(double surge, double yaw, double ballast, double lampIntensity, bool holdPosition);
 
     private:
         double m_Surge = 0.0;

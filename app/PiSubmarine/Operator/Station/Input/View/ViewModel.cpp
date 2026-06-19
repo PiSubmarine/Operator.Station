@@ -2,6 +2,20 @@
 
 namespace PiSubmarine::Operator::Station::Input::View
 {
+    namespace
+    {
+        void EmitIntentSignals(ViewModel& viewModel)
+        {
+            emit viewModel.IntentChanged();
+            emit viewModel.IntentUpdated(
+                viewModel.GetSurge(),
+                viewModel.GetYaw(),
+                viewModel.GetBallast(),
+                viewModel.GetLampIntensity(),
+                viewModel.GetHoldPosition());
+        }
+    }
+
     ViewModel::ViewModel(QObject* parent)
         : QObject(parent)
     {
@@ -17,34 +31,34 @@ namespace PiSubmarine::Operator::Station::Input::View
     {
         if (m_Surge == surge) return;
         m_Surge = surge;
-        emit IntentChanged();
+        EmitIntentSignals(*this);
     }
 
     void ViewModel::SetYaw(const double yaw)
     {
         if (m_Yaw == yaw) return;
         m_Yaw = yaw;
-        emit IntentChanged();
+        EmitIntentSignals(*this);
     }
 
     void ViewModel::SetBallast(const double ballast)
     {
         if (m_Ballast == ballast) return;
         m_Ballast = ballast;
-        emit IntentChanged();
+        EmitIntentSignals(*this);
     }
 
     void ViewModel::SetLampIntensity(const double lampIntensity)
     {
         if (m_LampIntensity == lampIntensity) return;
         m_LampIntensity = lampIntensity;
-        emit IntentChanged();
+        EmitIntentSignals(*this);
     }
 
     void ViewModel::SetHoldPosition(const bool holdPosition)
     {
         if (m_HoldPosition == holdPosition) return;
         m_HoldPosition = holdPosition;
-        emit IntentChanged();
+        EmitIntentSignals(*this);
     }
 }

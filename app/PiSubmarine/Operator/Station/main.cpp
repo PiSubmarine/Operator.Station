@@ -251,7 +251,6 @@ int main(int argc, char* argv[])
         loggerFactory);
     auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
         fakeInputSink,
-        inputViewModel,
         loggerFactory);
 
     QObject::connect(
@@ -286,9 +285,9 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
     QObject::connect(
         &inputViewModel,
-        &PiSubmarine::Operator::Station::Input::View::ViewModel::IntentChanged,
+        &PiSubmarine::Operator::Station::Input::View::ViewModel::IntentUpdated,
         inputController.get(),
-        &PiSubmarine::Operator::Station::Input::Controller::SubmitCurrentIntent,
+        &PiSubmarine::Operator::Station::Input::Controller::SubmitIntent,
         Qt::QueuedConnection);
 
     videoController->moveToThread(&controllerThread);
