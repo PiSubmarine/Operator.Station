@@ -1,5 +1,7 @@
 #include "PiSubmarine/Operator/Station/Telemetry/Controller.h"
 
+#include <QMetaObject>
+#include <QThread>
 #include <spdlog/spdlog.h>
 
 #include "PiSubmarine/Operator/Station/Telemetry/BatteryController.h"
@@ -10,17 +12,15 @@ namespace PiSubmarine::Operator::Station::Telemetry
 {
     Controller::Controller(
         ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
-        ISubscriptionService& subscriptionService,
         LampController& lampController,
-        MotorController& motorController,
+        std::vector<std::reference_wrapper<MotorController>> motorControllers,
         BatteryController& batteryController,
         PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
         : QObject(parent)
         , m_LeaseIssuer(leaseIssuer)
-        , m_SubscriptionService(subscriptionService)
         , m_LampController(lampController)
-        , m_MotorController(motorController)
+        , m_MotorControllers(std::move(motorControllers))
         , m_BatteryController(batteryController)
         , m_Logger(loggerFactory.CreateLogger("Operator.Station.Telemetry.Controller"))
     {
@@ -31,6 +31,12 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
     void Controller::Start()
     {
+        if (thread() != nullptr && QThread::currentThread() != thread())
+        {
+            QMetaObject::invokeMethod(this, &Controller::Start, Qt::QueuedConnection);
+            return;
+        }
+
         if (m_IsStarted)
         {
             return;
@@ -43,14 +49,23 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
     void Controller::Stop()
     {
-        // TODO m_Timer is moved to another thread, but stopped in UI thread.
-        m_Timer.stop();
-        m_IsStarted = false;
-
-        if (m_IsSubscribed && m_Lease.has_value())
+        if (thread() != nullptr && QThread::currentThread() != thread())
         {
-            static_cast<void>(m_SubscriptionService.Unsubscribe(m_Lease->Id));
+            if (thread()->isRunning())
+            {
+                QMetaObject::invokeMethod(this, &Controller::Stop, Qt::BlockingQueuedConnection);
+            }
+            return;
         }
+
+        m_Timer.stop();
+
+        if (!m_IsStarted && !m_Lease.has_value())
+        {
+            return;
+        }
+
+        m_IsStarted = false;
 
         if (m_Lease.has_value())
         {
@@ -58,19 +73,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
 
         m_Lease.reset();
-        m_IsSubscribed = false;
-    }
-
-    void Controller::SetSubscriptionEndpoint(const QString& host, const quint16 port)
-    {
-        const Shared::Endpoint nextEndpoint{host.toStdString(), port};
-        if (m_SubscriptionEndpoint == nextEndpoint)
-        {
-            return;
-        }
-
-        m_SubscriptionEndpoint = nextEndpoint;
-        m_IsSubscribed = false;
+        m_NextRenewal = std::chrono::nanoseconds::zero();
     }
 
     void Controller::Tick()
@@ -83,31 +86,37 @@ namespace PiSubmarine::Operator::Station::Telemetry
         const auto uptime = std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now() - m_StartTime);
 
-        if (EnsureLease(uptime))
+        const auto leaseResult = EnsureLease(uptime);
+        if (leaseResult.has_value())
         {
             if (uptime >= m_NextRenewal)
             {
                 RenewLease(uptime);
             }
 
-            EnsureSubscription();
             m_LampController.Refresh();
-            m_MotorController.Refresh();
+            for (MotorController& motorController : m_MotorControllers)
+            {
+                motorController.Refresh();
+            }
             m_BatteryController.Refresh();
+        }
+        else if (!IsNotReadyError(leaseResult.error()))
+        {
+            SPDLOG_LOGGER_WARN(m_Logger, "Telemetry lease acquisition failed");
         }
     }
 
-    // TODO WTF, Use Error::Api::ErrorCondition::NotReady directly.
-    Error::Api::ErrorCondition Controller::GetNotReadyCondition()
+    bool Controller::IsNotReadyError(const Error::Api::Error& error)
     {
-        return static_cast<Error::Api::ErrorCondition>(3);
+        return error.Condition == Error::Api::ErrorCondition::NotReady;
     }
 
-    bool Controller::EnsureLease(const std::chrono::nanoseconds& uptime)
+    Error::Api::Result<void> Controller::EnsureLease(const std::chrono::nanoseconds& uptime)
     {
         if (m_Lease.has_value())
         {
-            return true;
+            return {};
         }
 
         const auto result = m_LeaseIssuer.AcquireLease({
@@ -115,13 +124,12 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
         if (!result.has_value())
         {
-            // TODO current code does not distinguish between denial and temporary unavailability. All errors are reported as "Not Ready", which is inaccurate.
-            return result.error().Condition == GetNotReadyCondition();
+            return std::unexpected(result.error());
         }
 
         m_Lease = result->Lease;
         m_NextRenewal = uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_Lease->Duration / 2);
-        return true;
+        return {};
     }
 
     void Controller::RenewLease(const std::chrono::nanoseconds& uptime)
@@ -134,30 +142,15 @@ namespace PiSubmarine::Operator::Station::Telemetry
         const auto result = m_LeaseIssuer.RenewLease(m_Lease->Id);
         if (!result.has_value())
         {
-            if (result.error().Condition != GetNotReadyCondition())
+            if (!IsNotReadyError(result.error()))
             {
                 m_Lease.reset();
-                m_IsSubscribed = false;
+                m_NextRenewal = std::chrono::nanoseconds::zero();
             }
             return;
         }
 
         m_Lease = *result;
         m_NextRenewal = uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_Lease->Duration / 2);
-    }
-
-    // TODO not needed
-    void Controller::EnsureSubscription()
-    {
-        if (m_IsSubscribed || !m_Lease.has_value())
-        {
-            return;
-        }
-
-        const auto result = m_SubscriptionService.Subscribe(m_Lease->Id, m_SubscriptionEndpoint);
-        if (result.has_value())
-        {
-            m_IsSubscribed = true;
-        }
     }
 }

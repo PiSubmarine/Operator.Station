@@ -63,11 +63,8 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/BatteryController.h
         PiSubmarine/Operator/Station/Telemetry/Controller.cpp
         PiSubmarine/Operator/Station/Telemetry/Controller.h
-        PiSubmarine/Operator/Station/Telemetry/FakeController.cpp
-        PiSubmarine/Operator/Station/Telemetry/FakeController.h
-        PiSubmarine/Operator/Station/Telemetry/FakeSubscriptionService.cpp
-        PiSubmarine/Operator/Station/Telemetry/FakeSubscriptionService.h
-        PiSubmarine/Operator/Station/Telemetry/ISubscriptionService.h
+        PiSubmarine/Operator/Station/Telemetry/FakeProviders.cpp
+        PiSubmarine/Operator/Station/Telemetry/FakeProviders.h
         PiSubmarine/Operator/Station/Telemetry/LampController.cpp
         PiSubmarine/Operator/Station/Telemetry/LampController.h
         PiSubmarine/Operator/Station/Telemetry/MotorController.cpp

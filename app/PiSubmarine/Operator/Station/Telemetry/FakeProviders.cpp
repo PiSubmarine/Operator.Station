@@ -1,13 +1,4 @@
-#include "PiSubmarine/Operator/Station/Telemetry/FakeController.h"
-
-#include <chrono>
-
-#include "PiSubmarine/Battery/Telemetry/Api/IProvider.h"
-#include "PiSubmarine/Lamp/Telemetry/Api/IProvider.h"
-#include "PiSubmarine/Motor/Telemetry/Api/IProvider.h"
-#include "PiSubmarine/Operator/Station/Telemetry/BatteryController.h"
-#include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
-#include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/FakeProviders.h"
 
 namespace PiSubmarine::Operator::Station::Telemetry
 {
@@ -31,6 +22,11 @@ namespace PiSubmarine::Operator::Station::Telemetry
         class FakeMotorProvider final : public ::PiSubmarine::Motor::Telemetry::Api::IProvider
         {
         public:
+            explicit FakeMotorProvider(const int phaseOffset)
+                : m_Tick(phaseOffset)
+            {
+            }
+
             [[nodiscard]] Error::Api::Result<::PiSubmarine::Motor::Telemetry::Api::State> GetState() const override
             {
                 ++m_Tick;
@@ -78,28 +74,18 @@ namespace PiSubmarine::Operator::Station::Telemetry
         };
     }
 
-    FakeParts CreateFakeController(
-        ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
-        ISubscriptionService& subscriptionService,
-        PiSubmarine::Logging::Api::IFactory& loggerFactory,
-        QObject* parent)
+    FakeProviders CreateFakeProviders(const std::size_t motorCount)
     {
-        static FakeLampProvider lampProvider;
-        static FakeMotorProvider motorProvider;
-        static FakeBatteryProvider batteryProvider;
+        FakeProviders providers;
+        providers.Lamp = std::make_unique<FakeLampProvider>();
+        providers.Battery = std::make_unique<FakeBatteryProvider>();
+        providers.Motors.reserve(motorCount);
 
-        FakeParts parts;
-        parts.Lamp = std::make_unique<LampController>(lampProvider, parent);
-        parts.Motor = std::make_unique<MotorController>(motorProvider, parent);
-        parts.Battery = std::make_unique<BatteryController>(batteryProvider, parent);
-        parts.Coordinator = std::make_unique<Controller>(
-            leaseIssuer,
-            subscriptionService,
-            *parts.Lamp,
-            *parts.Motor,
-            *parts.Battery,
-            loggerFactory,
-            parent);
-        return parts;
+        for (std::size_t index = 0; index < motorCount; ++index)
+        {
+            providers.Motors.push_back(std::make_unique<FakeMotorProvider>(static_cast<int>(index) * 7));
+        }
+
+        return providers;
     }
 }

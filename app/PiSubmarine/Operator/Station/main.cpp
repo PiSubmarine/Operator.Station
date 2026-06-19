@@ -1,5 +1,7 @@
+#include <functional>
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -9,6 +11,7 @@
 #include <QQuickItem>
 #include <QThread>
 #include <QUrl>
+#include <QVariant>
 
 #include <gst/gst.h>
 #include <spdlog/logger.h>
@@ -23,11 +26,11 @@
 #include "PiSubmarine/Operator/Station/Lease/FakeIssuer.h"
 #include "PiSubmarine/Operator/Station/Lease/SyncLeaseIssuerProxy.h"
 #include "PiSubmarine/Operator/Station/Lease/ThreadWorker.h"
-#include "PiSubmarine/Operator/Station/Telemetry/FakeController.h"
-#include "PiSubmarine/Operator/Station/Telemetry/FakeSubscriptionService.h"
 #include "PiSubmarine/Operator/Station/Telemetry/BatteryController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/FakeProviders.h"
 #include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/Controller.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Lamp/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Motor/ViewModel.h"
@@ -146,14 +149,36 @@ int main(int argc, char* argv[])
 
     PiSubmarine::Operator::Station::Input::View::ViewModel inputViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel lampTelemetryViewModel;
-    PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel motorTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Battery::ViewModel batteryTelemetryViewModel;
+
+    constexpr std::size_t TelemetryMotorCount = 4;
+    auto fakeTelemetryProviders = PiSubmarine::Operator::Station::Telemetry::CreateFakeProviders(TelemetryMotorCount);
+
+    std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>> motorTelemetryViewModels;
+    std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllers;
+    std::vector<std::reference_wrapper<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllerRefs;
+    QVariantList motorTelemetryViewModelList;
+
+    motorTelemetryViewModels.reserve(TelemetryMotorCount);
+    motorTelemetryControllers.reserve(TelemetryMotorCount);
+    motorTelemetryControllerRefs.reserve(TelemetryMotorCount);
+    motorTelemetryViewModelList.reserve(static_cast<qsizetype>(TelemetryMotorCount));
+
+    for (std::size_t index = 0; index < TelemetryMotorCount; ++index)
+    {
+        motorTelemetryViewModels.push_back(
+            std::make_unique<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>());
+        motorTelemetryControllers.push_back(
+            std::make_unique<PiSubmarine::Operator::Station::Telemetry::MotorController>(*fakeTelemetryProviders.Motors.at(index)));
+        motorTelemetryControllerRefs.emplace_back(*motorTelemetryControllers.back());
+        motorTelemetryViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(motorTelemetryViewModels.back().get())));
+    }
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("videoViewModel", &videoViewModel);
     engine.rootContext()->setContextProperty("inputViewModel", &inputViewModel);
     engine.rootContext()->setContextProperty("lampTelemetryViewModel", &lampTelemetryViewModel);
-    engine.rootContext()->setContextProperty("motorTelemetryViewModel", &motorTelemetryViewModel);
+    engine.rootContext()->setContextProperty("motorTelemetryViewModels", motorTelemetryViewModelList);
     engine.rootContext()->setContextProperty("batteryTelemetryViewModel", &batteryTelemetryViewModel);
     qmlRegisterType<PiSubmarine::Operator::Station::Video::View::VideoSurfaceItem>(
         "PiSubmarine.Operator.Station",
@@ -192,7 +217,6 @@ int main(int argc, char* argv[])
 
     PiSubmarine::Operator::Station::Lease::SyncLeaseIssuerProxy leaseProxy(*leaseWorker);
     LocalVideoSubscriptionService videoSubscriptionService;
-    PiSubmarine::Operator::Station::Telemetry::FakeSubscriptionService telemetrySubscriptionService;
     PiSubmarine::Operator::Station::Input::FakeSink fakeInputSink;
     PiSubmarine::Operator::Station::Video::View::QmlVideoSinkTailFactory videoTailFactory(*videoItem, logger);
 
@@ -213,10 +237,13 @@ int main(int argc, char* argv[])
         leaseProxy,
         videoSubscriptionService,
         videoPipelineBuilder);
-
-    auto telemetryParts = PiSubmarine::Operator::Station::Telemetry::CreateFakeController(
+    auto lampTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::LampController>(*fakeTelemetryProviders.Lamp);
+    auto batteryTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::BatteryController>(*fakeTelemetryProviders.Battery);
+    auto telemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::Controller>(
         leaseProxy,
-        telemetrySubscriptionService,
+        *lampTelemetryController,
+        std::move(motorTelemetryControllerRefs),
+        *batteryTelemetryController,
         loggerFactory);
     auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
         fakeInputSink,
@@ -235,19 +262,22 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Video::Controller::SetSubscriptionEndpoint,
         Qt::QueuedConnection);
     QObject::connect(
-        telemetryParts.Lamp.get(),
+        lampTelemetryController.get(),
         &PiSubmarine::Operator::Station::Telemetry::LampController::SnapshotChanged,
         &lampTelemetryViewModel,
         &PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
+    for (std::size_t index = 0; index < motorTelemetryControllers.size(); ++index)
+    {
+        QObject::connect(
+            motorTelemetryControllers.at(index).get(),
+            &PiSubmarine::Operator::Station::Telemetry::MotorController::SnapshotChanged,
+            motorTelemetryViewModels.at(index).get(),
+            &PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel::SetSnapshot,
+            Qt::QueuedConnection);
+    }
     QObject::connect(
-        telemetryParts.Motor.get(),
-        &PiSubmarine::Operator::Station::Telemetry::MotorController::SnapshotChanged,
-        &motorTelemetryViewModel,
-        &PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel::SetSnapshot,
-        Qt::QueuedConnection);
-    QObject::connect(
-        telemetryParts.Battery.get(),
+        batteryTelemetryController.get(),
         &PiSubmarine::Operator::Station::Telemetry::BatteryController::SnapshotChanged,
         &batteryTelemetryViewModel,
         &PiSubmarine::Operator::Station::Telemetry::View::Battery::ViewModel::SetSnapshot,
@@ -260,21 +290,24 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
 
     videoController->moveToThread(&controllerThread);
-    telemetryParts.Lamp->moveToThread(&controllerThread);
-    telemetryParts.Motor->moveToThread(&controllerThread);
-    telemetryParts.Battery->moveToThread(&controllerThread);
-    telemetryParts.Coordinator->moveToThread(&controllerThread);
+    lampTelemetryController->moveToThread(&controllerThread);
+    for (const auto& motorTelemetryController : motorTelemetryControllers)
+    {
+        motorTelemetryController->moveToThread(&controllerThread);
+    }
+    batteryTelemetryController->moveToThread(&controllerThread);
+    telemetryController->moveToThread(&controllerThread);
     inputController->moveToThread(&controllerThread);
 
     QObject::connect(&controllerThread, &QThread::started, videoController.get(), &PiSubmarine::Operator::Station::Video::Controller::Start);
-    QObject::connect(&controllerThread, &QThread::started, telemetryParts.Coordinator.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Start);
+    QObject::connect(&controllerThread, &QThread::started, telemetryController.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Start);
     leaseThread.start();
     controllerThread.start();
 
     QObject::connect(&application, &QGuiApplication::aboutToQuit, &application, [&]()
     {
         QMetaObject::invokeMethod(videoController.get(), &PiSubmarine::Operator::Station::Video::Controller::Stop, Qt::BlockingQueuedConnection);
-        QMetaObject::invokeMethod(telemetryParts.Coordinator.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Stop, Qt::BlockingQueuedConnection);
+        QMetaObject::invokeMethod(telemetryController.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Stop, Qt::BlockingQueuedConnection);
         controllerThread.quit();
         controllerThread.wait();
         leaseThread.quit();

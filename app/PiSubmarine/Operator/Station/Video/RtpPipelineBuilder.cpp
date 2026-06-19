@@ -28,6 +28,7 @@ namespace PiSubmarine::Operator::Station::Video
         };
     }
 
+    // TODO Method too simple to exist. Remove.
     std::shared_ptr<IPipelineBuilder> CreateRtpPipelineBuilder(
         PiSubmarine::Logging::Api::IFactory& loggerFactory,
         IVideoPipelineTailFactory& tailFactory)

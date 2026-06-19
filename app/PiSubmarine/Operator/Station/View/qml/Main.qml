@@ -43,9 +43,17 @@ ApplicationWindow {
                 source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml"
             }
 
-            Loader {
-                Layout.fillWidth: true
-                source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
+            Repeater {
+                model: motorTelemetryViewModels
+
+                delegate: Loader {
+                    required property var modelData
+
+                    Layout.fillWidth: true
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
+
+                    onLoaded: item.viewModel = modelData
+                }
             }
 
             Loader {

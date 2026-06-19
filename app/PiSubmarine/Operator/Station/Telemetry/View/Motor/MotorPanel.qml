@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 
 Rectangle {
+    property QtObject viewModel: null
+
     color: "#112332"
     radius: 18
     border.color: "#1f475f"
@@ -13,8 +15,14 @@ Rectangle {
         spacing: 8
 
         Label { text: "Motor"; color: "#dbefff"; font.pixelSize: 22 }
-        Label { text: motorTelemetryViewModel.operationalState; color: "#c0d7e7" }
-        Label { text: motorTelemetryViewModel.hasFault ? "Fault detected" : "No faults"; color: motorTelemetryViewModel.hasFault ? "#ff8f70" : "#c0d7e7" }
-        Label { text: motorTelemetryViewModel.hasWarning ? "Warning present" : "No warnings"; color: motorTelemetryViewModel.hasWarning ? "#ffd166" : "#c0d7e7" }
+        Label { text: viewModel !== null ? viewModel.operationalState : "Unknown"; color: "#c0d7e7" }
+        Label {
+            text: viewModel !== null && viewModel.hasFault ? "Fault detected" : "No faults"
+            color: viewModel !== null && viewModel.hasFault ? "#ff8f70" : "#c0d7e7"
+        }
+        Label {
+            text: viewModel !== null && viewModel.hasWarning ? "Warning present" : "No warnings"
+            color: viewModel !== null && viewModel.hasWarning ? "#ffd166" : "#c0d7e7"
+        }
     }
 }
