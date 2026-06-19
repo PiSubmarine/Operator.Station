@@ -32,6 +32,8 @@ namespace PiSubmarine::Operator::Station::Infrastructure
             const std::vector<spdlog::sink_ptr> sinks{consoleSink, fileSink};
 
             auto logger = std::make_shared<spdlog::logger>(loggerName, sinks.begin(), sinks.end());
+
+            // TODO Make level configurable through CLI arguments
             logger->set_level(spdlog::level::info);
             logger->flush_on(spdlog::level::info);
             spdlog::register_logger(logger);
