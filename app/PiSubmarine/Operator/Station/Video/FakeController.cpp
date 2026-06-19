@@ -18,8 +18,7 @@ namespace PiSubmarine::Operator::Station::Video
             loggerFactory,
             leaseIssuer,
             subscriptionService,
-            CreateFakePipelineBuilder(loggerFactory),
-            tailFactory,
+            CreateFakePipelineBuilder(loggerFactory, tailFactory),
             parent);
     }
 }

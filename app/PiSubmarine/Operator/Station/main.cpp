@@ -225,6 +225,8 @@ int main(int argc, char* argv[])
         .Port = videoViewModel.GetSubscriptionPort()};
 
     std::unique_ptr<PiSubmarine::Operator::Station::Video::Controller> videoController;
+
+    // TODO Simplify. We don't actually have Fake Video Controller. CreateFakeController creates the same Controller, but injects Fake pipeline in it. Remove CreateFakeController function, unify Controller creation.
     if (parser.isSet("fake-video"))
     {
         videoController = PiSubmarine::Operator::Station::Video::CreateFakeController(
@@ -241,8 +243,7 @@ int main(int argc, char* argv[])
             loggerFactory,
             leaseProxy,
             videoSubscriptionService,
-            PiSubmarine::Operator::Station::Video::CreateRtpPipelineBuilder(loggerFactory),
-            videoTailFactory);
+            PiSubmarine::Operator::Station::Video::CreateRtpPipelineBuilder(loggerFactory, videoTailFactory));
     }
 
     auto telemetryParts = PiSubmarine::Operator::Station::Telemetry::CreateFakeController(

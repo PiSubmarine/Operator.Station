@@ -5,6 +5,7 @@
 #include <gst/gst.h>
 #include <spdlog/logger.h>
 
+#include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Operator/Station/Video/Config.h"
 #include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
 
@@ -15,12 +16,10 @@ namespace PiSubmarine::Operator::Station::Video
     class RtpPipeline final : public GstreamerPipeline
     {
     public:
-
-        // TODO Inject Logger Factory instead of logger.
         RtpPipeline(
             const ReceiveEndpoint& receiveEndpoint,
             IVideoPipelineTailFactory& tailFactory,
-            std::shared_ptr<spdlog::logger> logger);
+            PiSubmarine::Logging::Api::IFactory& loggerFactory);
         ~RtpPipeline() override;
 
         [[nodiscard]] Error::Api::Result<void> Stop() override;

@@ -1,8 +1,5 @@
 #include "PiSubmarine/Operator/Station/Video/RtpPipelineBuilder.h"
 
-#include <stdexcept>
-#include <utility>
-
 #include "PiSubmarine/Operator/Station/Video/RtpPipeline.h"
 
 namespace PiSubmarine::Operator::Station::Video
@@ -12,31 +9,29 @@ namespace PiSubmarine::Operator::Station::Video
         class RtpPipelineBuilder final : public IPipelineBuilder
         {
         public:
-            explicit RtpPipelineBuilder(PiSubmarine::Logging::Api::IFactory& loggerFactory)
+            RtpPipelineBuilder(
+                PiSubmarine::Logging::Api::IFactory& loggerFactory,
+                IVideoPipelineTailFactory& tailFactory)
                 : m_LoggerFactory(loggerFactory)
+                , m_TailFactory(tailFactory)
             {
             }
 
-            [[nodiscard]] std::unique_ptr<IPipeline> Build(
-                const ReceiveEndpoint& receiveEndpoint,
-                IVideoPipelineTailFactory& tailFactory) override
+            [[nodiscard]] std::unique_ptr<IPipeline> Build(const ReceiveEndpoint& receiveEndpoint) override
             {
-                auto logger = m_LoggerFactory.CreateLogger("Operator.Station.Video.Gst");
-                if (!logger)
-                {
-                    throw std::invalid_argument("Operator.Station.Video requires a GStreamer logger");
-                }
-
-                return std::make_unique<RtpPipeline>(receiveEndpoint, tailFactory, std::move(logger));
+                return std::make_unique<RtpPipeline>(receiveEndpoint, m_TailFactory, m_LoggerFactory);
             }
 
         private:
             PiSubmarine::Logging::Api::IFactory& m_LoggerFactory;
+            IVideoPipelineTailFactory& m_TailFactory;
         };
     }
 
-    std::shared_ptr<IPipelineBuilder> CreateRtpPipelineBuilder(PiSubmarine::Logging::Api::IFactory& loggerFactory)
+    std::shared_ptr<IPipelineBuilder> CreateRtpPipelineBuilder(
+        PiSubmarine::Logging::Api::IFactory& loggerFactory,
+        IVideoPipelineTailFactory& tailFactory)
     {
-        return std::make_shared<RtpPipelineBuilder>(loggerFactory);
+        return std::make_shared<RtpPipelineBuilder>(loggerFactory, tailFactory);
     }
 }

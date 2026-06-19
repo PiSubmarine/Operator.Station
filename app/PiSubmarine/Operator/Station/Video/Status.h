@@ -10,7 +10,6 @@ namespace PiSubmarine::Operator::Station::Video
     struct Status
     {
         bool IsStarted = false;
-        bool HasTailFactory = false;
         bool HasLease = false;
         bool IsSubscribed = false;
         bool IsPipelineRunning = false;

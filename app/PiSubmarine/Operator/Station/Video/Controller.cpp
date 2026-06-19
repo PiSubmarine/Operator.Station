@@ -1,6 +1,7 @@
 #include "PiSubmarine/Operator/Station/Video/Controller.h"
 
 #include <stdexcept>
+#include <QMetaObject>
 #include <QThread>
 
 #include <spdlog/spdlog.h>
@@ -24,7 +25,6 @@ namespace PiSubmarine::Operator::Station::Video
         ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
         ::PiSubmarine::Video::Subscription::Api::IService& subscriptionService,
         std::shared_ptr<IPipelineBuilder> pipelineBuilder,
-        IVideoPipelineTailFactory& tailFactory,
         QObject* parent)
         : QObject(parent)
         , m_Config(std::move(config))
@@ -32,7 +32,6 @@ namespace PiSubmarine::Operator::Station::Video
         , m_LeaseIssuer(leaseIssuer)
         , m_SubscriptionService(subscriptionService)
         , m_PipelineBuilder(std::move(pipelineBuilder))
-        , m_TailFactory(tailFactory)
     {
         if (!m_Logger || !m_PipelineBuilder)
         {
@@ -67,7 +66,15 @@ namespace PiSubmarine::Operator::Station::Video
 
     void Controller::Stop()
     {
-        // TODO m_Timer is moved to another thread, but stopped in UI thread.
+        if (thread() != nullptr && QThread::currentThread() != thread())
+        {
+            if (thread()->isRunning())
+            {
+                QMetaObject::invokeMethod(this, &Controller::Stop, Qt::BlockingQueuedConnection);
+            }
+            return;
+        }
+
         m_Timer.stop();
 
         if (!m_IsStarted && !m_Pipeline && !m_LeaseGrant.has_value())
@@ -133,11 +140,10 @@ namespace PiSubmarine::Operator::Station::Video
         m_IsDirty = true;
     }
 
-    Error::Api::Result<Status> Controller::GetStatus() const
+    Status Controller::GetStatus() const
     {
-        return Status{
+        return {
             .IsStarted = m_IsStarted,
-            .HasTailFactory = true,
             .HasLease = m_LeaseGrant.has_value(),
             .IsSubscribed = m_IsSubscribed,
             .IsPipelineRunning = m_Pipeline != nullptr && m_Pipeline->IsRunning(),
@@ -215,7 +221,7 @@ namespace PiSubmarine::Operator::Station::Video
 
     Error::Api::ErrorCondition Controller::GetNotReadyCondition()
     {
-        return static_cast<Error::Api::ErrorCondition>(3);
+        return Error::Api::ErrorCondition::NotReady;
     }
 
     bool Controller::IsNotReadyError(const Error::Api::Error& error)
@@ -294,7 +300,7 @@ namespace PiSubmarine::Operator::Station::Video
 
         try
         {
-            m_Pipeline = m_PipelineBuilder->Build(m_Config.ReceiveEndpoint, m_TailFactory);
+            m_Pipeline = m_PipelineBuilder->Build(m_Config.ReceiveEndpoint);
         }
         catch (const std::exception& exception)
         {

@@ -29,8 +29,8 @@ namespace PiSubmarine::Operator::Station::Video
 	RtpPipeline::RtpPipeline(
 		const ReceiveEndpoint& receiveEndpoint,
 		IVideoPipelineTailFactory& tailFactory,
-		std::shared_ptr<spdlog::logger> logger)
-		: m_Logger(std::move(logger))
+		PiSubmarine::Logging::Api::IFactory& loggerFactory)
+		: m_Logger(loggerFactory.CreateLogger("Operator.Station.Video.Gst"))
 	{
 		if (!InitializeGstreamer(m_Logger))
 		{
@@ -84,7 +84,10 @@ namespace PiSubmarine::Operator::Station::Video
 			GstreamerInitialized = gst_init_check(nullptr, nullptr, &error);
 			if (!GstreamerInitialized && error != nullptr)
 			{
-				SPDLOG_LOGGER_ERROR(logger, "gst_init_check failed: {}", error->message);
+				if (logger)
+				{
+					SPDLOG_LOGGER_ERROR(logger, "gst_init_check failed: {}", error->message);
+				}
 				g_error_free(error);
 			}
 		});

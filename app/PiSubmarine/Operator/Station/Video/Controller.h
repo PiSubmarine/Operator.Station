@@ -26,7 +26,6 @@ class QQuickItem;
 namespace PiSubmarine::Operator::Station::Video
 {
 	class IPipeline;
-	class IVideoPipelineTailFactory;
 
 	class Controller final : public QObject, public Time::ITickable
 	{
@@ -39,13 +38,10 @@ namespace PiSubmarine::Operator::Station::Video
 			::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
 			::PiSubmarine::Video::Subscription::Api::IService& subscriptionService,
 			std::shared_ptr<IPipelineBuilder> pipelineBuilder,
-			// TODO tail factory is only used to feed IPipelineBuilder::Build. Consider moving IVideoPipelineTailFactory dependency from Controller to the pipeline builders. Controller should not care about the pipeline structure.
-			IVideoPipelineTailFactory& tailFactory,
 			QObject* parent = nullptr);
 		~Controller() override;
 
-		// TODO Error::Api::Result is intended for cross-domain communication. No need to use it in internal methods, especially for methods that cannot fail.
-		[[nodiscard]] Error::Api::Result<Status> GetStatus() const;
+		[[nodiscard]] Status GetStatus() const;
 		void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
 	public slots:
@@ -72,7 +68,6 @@ namespace PiSubmarine::Operator::Station::Video
 		::PiSubmarine::Lease::Api::ILeaseIssuer& m_LeaseIssuer;
 		::PiSubmarine::Video::Subscription::Api::IService& m_SubscriptionService;
 		std::shared_ptr<IPipelineBuilder> m_PipelineBuilder;
-		IVideoPipelineTailFactory& m_TailFactory;
 		std::unique_ptr<IPipeline> m_Pipeline;
 		QTimer m_Timer;
 		std::chrono::steady_clock::time_point m_StartTime{};
