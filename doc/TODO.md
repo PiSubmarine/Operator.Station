@@ -6,7 +6,7 @@
 - [x] Lease calls already run on a dedicated worker thread via `Lease::ThreadWorker` and `Lease::SyncLeaseIssuerProxy`.
 - [x] Video transport configuration already exists partially as `--video-bind-address <address>` and `--video-port <port>`.
 - [x] Video can already use a real RTP receive pipeline when `--fake-video` is not set.
-- [ ] Lease, telemetry, and control are still wired to fake/local implementations in `main.cpp`.
+- [ ] Lease and control are still wired to fake/local implementations in `main.cpp`.
 - [ ] Video subscription is still wired to the local `LocalVideoSubscriptionService` stub in `main.cpp`.
 
 ## CLI and configuration
@@ -56,25 +56,25 @@
 ## Telemetry transport
 
 - [x] Introduce `Telemetry.Client.Udp::Client` in the composition root.
-- [ ] Replace the temporary telemetry endpoint assumption of `127.0.0.1:--telemetry-port` with the final `--telemetry-server <host:port>` option.
+- [x] Replace the temporary telemetry endpoint assumption of `127.0.0.1:--telemetry-port` with the final `--telemetry-server <host:port>` option.
 - [x] Create `Telemetry.Channels.Api` and move shared telemetry channel ids there.
 - [x] Add per-channel `Telemetry.Client.Udp::Source` adapters for battery and motor domains consumed by the UI.
 - [x] Replace the current battery/motor copied channel-id strings in `Operator.Station` and `Drone.Server.Fake` with `Telemetry.Channels.Api`.
-- [ ] Replace fake telemetry providers with protobuf deserializers for all available UI domains.
+- [x] Replace fake telemetry providers with protobuf deserializers for all available UI domains.
 - [x] Replace fake battery and motor telemetry providers with protobuf deserializers:
   `Motor.Telemetry.Protobuf::Deserializer`,
   `Battery.Telemetry.Protobuf::Deserializer`.
-- [ ] Replace the lamp fake provider with `Lamp.Telemetry.Protobuf::Deserializer` once a shared lamp telemetry channel is defined and produced by the server.
-- [ ] Add new UI telemetry paths for:
+- [x] Replace the lamp fake provider with `Lamp.Telemetry.Protobuf::Deserializer` once a shared lamp telemetry channel is defined and produced by the server.
+- [x] Add new UI telemetry paths for:
   `Proximity.Telemetry.Api`,
   `Ballast.Telemetry.Api`,
   `Video.Telemetry.Api`,
   `Depth.Telemetry.Api`.
-- [ ] Replace private channel-id definitions in producers/consumers with `Telemetry.Channels.Api`
+- [x] Replace private channel-id definitions in producers/consumers with `Telemetry.Channels.Api`
   for ids such as `battery.main`, `motor.front-left`, `motor.front-right`, `motor.rear-left`, `motor.rear-right`.
-- [ ] Remove lease handling from `Telemetry::Controller`.
-- [ ] Make `Telemetry::Controller` a pure UI-facing refresh coordinator for telemetry providers/deserializers.
-- [ ] Remove the direct `telemetry-main` lease ownership from `Operator.Station`; telemetry lease/subscription lifecycle must live only inside `Telemetry.Client.Udp::Client`.
+- [x] Remove lease handling from `Telemetry::Controller`.
+- [x] Make `Telemetry::Controller` a pure UI-facing refresh coordinator for telemetry providers/deserializers.
+- [x] Remove the direct `telemetry-main` lease ownership from `Operator.Station`; telemetry lease/subscription lifecycle must live only inside `Telemetry.Client.Udp::Client`.
 
 ## Resilience and lifecycle
 

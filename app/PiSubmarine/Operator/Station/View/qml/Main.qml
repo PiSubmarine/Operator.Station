@@ -31,39 +31,64 @@ ApplicationWindow {
             }
         }
 
-        ColumnLayout {
+        ScrollView {
             Layout.preferredWidth: 380
             Layout.minimumWidth: 380
             Layout.maximumWidth: 380
             Layout.fillHeight: true
-            spacing: 16
+            clip: true
 
-            Loader {
-                Layout.fillWidth: true
-                source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml"
-            }
+            ColumnLayout {
+                width: 380
+                spacing: 16
 
-            Repeater {
-                model: motorTelemetryViewModels
-
-                delegate: Loader {
-                    required property var modelData
-
+                Loader {
                     Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
-
-                    onLoaded: item.viewModel = modelData
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml"
                 }
-            }
 
-            Loader {
-                Layout.fillWidth: true
-                source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Lamp/LampPanel.qml"
-            }
+                Loader {
+                    Layout.fillWidth: true
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthPanel.qml"
+                }
 
-            Loader {
-                Layout.fillWidth: true
-                source: "qrc:/PiSubmarine/Operator/Station/Input/View/ControlPanel.qml"
+                Loader {
+                    Layout.fillWidth: true
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityPanel.qml"
+                }
+
+                Loader {
+                    Layout.fillWidth: true
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastPanel.qml"
+                }
+
+                Loader {
+                    Layout.fillWidth: true
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Video/VideoPanel.qml"
+                }
+
+                Repeater {
+                    model: motorTelemetryViewModels
+
+                    delegate: Loader {
+                        required property var modelData
+
+                        Layout.fillWidth: true
+                        source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
+
+                        onLoaded: item.viewModel = modelData
+                    }
+                }
+
+                Loader {
+                    Layout.fillWidth: true
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Lamp/LampPanel.qml"
+                }
+
+                Loader {
+                    Layout.fillWidth: true
+                    source: "qrc:/PiSubmarine/Operator/Station/Input/View/ControlPanel.qml"
+                }
             }
         }
     }

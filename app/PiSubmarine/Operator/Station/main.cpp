@@ -2,12 +2,15 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <limits>
 #include <optional>
 #include <string_view>
 #include <vector>
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <QGuiApplication>
+#include <QQuickItem>
 #include <QRegularExpression>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -18,8 +21,11 @@
 #include <gst/gst.h>
 #include <spdlog/logger.h>
 
+#include "PiSubmarine/Ballast/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Battery/Telemetry/Protobuf/Deserializer.h"
+#include "PiSubmarine/Depth/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Error/Api/Result.h"
+#include "PiSubmarine/Lamp/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Motor/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Operator/Station/Logging/QtLog.h"
 #include "PiSubmarine/Operator/Station/Logging/SpdlogFactory.h"
@@ -29,15 +35,22 @@
 #include "PiSubmarine/Operator/Station/Lease/FakeIssuer.h"
 #include "PiSubmarine/Operator/Station/Lease/SyncLeaseIssuerProxy.h"
 #include "PiSubmarine/Operator/Station/Lease/ThreadWorker.h"
+#include "PiSubmarine/Operator/Station/Telemetry/BallastController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/BatteryController.h"
-#include "PiSubmarine/Operator/Station/Telemetry/FakeProviders.h"
 #include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/DepthController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/ProximityController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/Controller.h"
+#include "PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h"
 #include "PiSubmarine/Operator/Station/Time/TickRunner.h"
+#include "PiSubmarine/Operator/Station/Telemetry/View/Ballast/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.h"
+#include "PiSubmarine/Operator/Station/Telemetry/View/Depth/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Lamp/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Motor/ViewModel.h"
+#include "PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.h"
+#include "PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/Controller.h"
 #include "PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h"
 #include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
@@ -45,6 +58,7 @@
 #include "PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.h"
 #include "PiSubmarine/Operator/Station/Video/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.h"
+#include "PiSubmarine/Proximity/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Security/Aead/Openssl/Provider.h"
 #include "PiSubmarine/Security/Nonce/Openssl/Provider.h"
 #include "PiSubmarine/Telemetry/Api/ChannelId.h"
@@ -53,6 +67,7 @@
 #include "PiSubmarine/Telemetry/Client/Udp/Source.h"
 #include "PiSubmarine/Udp/Api/Endpoint.h"
 #include "PiSubmarine/Udp/Asio/Socket.h"
+#include "PiSubmarine/Video/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Video/Subscription/Api/IService.h"
 
 namespace
@@ -62,9 +77,29 @@ namespace
         return PiSubmarine::Telemetry::Api::ChannelId{.Value = std::string(value)};
     }
 
+    [[nodiscard]] std::optional<PiSubmarine::Udp::Api::Endpoint> ParseEndpoint(const QString& value)
+    {
+        const auto trimmedValue = value.trimmed();
+        const auto separator = trimmedValue.lastIndexOf(':');
+        if (separator <= 0 || separator == trimmedValue.size() - 1)
+        {
+            return std::nullopt;
+        }
+
+        bool ok = false;
+        const auto port = trimmedValue.sliced(separator + 1).toUInt(&ok);
+        if (!ok || port > std::numeric_limits<std::uint16_t>::max())
+        {
+            return std::nullopt;
+        }
+
+        return PiSubmarine::Udp::Api::Endpoint{
+            .Address = trimmedValue.first(separator).toStdString(),
+            .Port = static_cast<std::uint16_t>(port)};
+    }
+
     constexpr std::size_t TelemetryMotorCount = 4;
     constexpr std::size_t TelemetryReceiveQueueCapacity = 16;
-    constexpr std::string_view TelemetryServerAddress = "127.0.0.1";
     const std::array<std::string_view, TelemetryMotorCount> MotorChannelIds{
         PiSubmarine::Telemetry::Channels::Api::MotorFrontLeft,
         PiSubmarine::Telemetry::Channels::Api::MotorFrontRight,
@@ -209,7 +244,7 @@ int main(int argc, char* argv[])
         "10ms"));
     parser.addOption(QCommandLineOption("video-bind-address", "Local RTP bind address.", "address", "0.0.0.0"));
     parser.addOption(QCommandLineOption("video-port", "Local RTP bind port.", "port", "5004"));
-    parser.addOption(QCommandLineOption("telemetry-port", "Telemetry UDP server port on 127.0.0.1.", "port", "6100"));
+    parser.addOption(QCommandLineOption("telemetry-server", "Telemetry UDP server endpoint host:port.", "endpoint", "127.0.0.1:6100"));
     parser.process(application);
 
     const auto logLevel = ParseLogLevel(parser.value("log-level"));
@@ -223,6 +258,13 @@ int main(int argc, char* argv[])
     if (!tickPeriod.has_value())
     {
         qCritical("Invalid --tickrate value. Use a positive duration with units ns, us, ms, or s.");
+        return 1;
+    }
+
+    const auto telemetryServerEndpoint = ParseEndpoint(parser.value("telemetry-server"));
+    if (!telemetryServerEndpoint.has_value())
+    {
+        qCritical("Invalid --telemetry-server value. Use host:port.");
         return 1;
     }
 
@@ -244,7 +286,11 @@ int main(int argc, char* argv[])
     videoViewModel.SetSubscriptionPort(static_cast<quint16>(parser.value("video-port").toUShort()));
 
     PiSubmarine::Operator::Station::Input::View::ViewModel inputViewModel;
+    PiSubmarine::Operator::Station::Telemetry::View::Ballast::ViewModel ballastTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel lampTelemetryViewModel;
+    PiSubmarine::Operator::Station::Telemetry::View::Depth::ViewModel depthTelemetryViewModel;
+    PiSubmarine::Operator::Station::Telemetry::View::Proximity::ViewModel proximityTelemetryViewModel;
+    PiSubmarine::Operator::Station::Telemetry::View::Video::ViewModel videoTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Battery::ViewModel batteryTelemetryViewModel;
 
     std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>> motorTelemetryViewModels;
@@ -266,9 +312,13 @@ int main(int argc, char* argv[])
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("videoViewModel", &videoViewModel);
+    engine.rootContext()->setContextProperty("ballastTelemetryViewModel", &ballastTelemetryViewModel);
     engine.rootContext()->setContextProperty("inputViewModel", &inputViewModel);
+    engine.rootContext()->setContextProperty("depthTelemetryViewModel", &depthTelemetryViewModel);
     engine.rootContext()->setContextProperty("lampTelemetryViewModel", &lampTelemetryViewModel);
     engine.rootContext()->setContextProperty("motorTelemetryViewModels", motorTelemetryViewModelList);
+    engine.rootContext()->setContextProperty("proximityTelemetryViewModel", &proximityTelemetryViewModel);
+    engine.rootContext()->setContextProperty("videoTelemetryViewModel", &videoTelemetryViewModel);
     engine.rootContext()->setContextProperty("batteryTelemetryViewModel", &batteryTelemetryViewModel);
     qmlRegisterType<PiSubmarine::Operator::Station::Video::View::VideoSurfaceItem>(
         "PiSubmarine.Operator.Station",
@@ -309,12 +359,10 @@ int main(int argc, char* argv[])
     LocalVideoSubscriptionService videoSubscriptionService;
     PiSubmarine::Operator::Station::Input::FakeSink fakeInputSink;
     PiSubmarine::Operator::Station::Video::View::QmlVideoSinkTailFactory videoTailFactory(*videoItem, logger);
-    auto fakeTelemetryProviders = PiSubmarine::Operator::Station::Telemetry::CreateFakeProviders(TelemetryMotorCount);
     PiSubmarine::Udp::Asio::Socket telemetrySocket(TelemetryReceiveQueueCapacity);
     PiSubmarine::Security::Aead::Openssl::Provider telemetryAeadProvider;
     PiSubmarine::Security::Nonce::Openssl::Provider telemetryNonceProvider;
 
-    const auto telemetryServerPort = static_cast<std::uint16_t>(parser.value("telemetry-port").toUShort());
     const auto telemetryBindResult = telemetrySocket.Bind(PiSubmarine::Udp::Api::Endpoint{
         .Address = "0.0.0.0",
         .Port = 0});
@@ -330,13 +378,31 @@ int main(int argc, char* argv[])
         telemetryNonceProvider,
         telemetrySocket,
         telemetrySocket,
-        PiSubmarine::Udp::Api::Endpoint{
-            .Address = std::string(TelemetryServerAddress),
-            .Port = telemetryServerPort});
+        *telemetryServerEndpoint);
+    PiSubmarine::Telemetry::Client::Udp::Source ballastTelemetrySource(
+        telemetryClient,
+        MakeChannelId(PiSubmarine::Telemetry::Channels::Api::BallastMain));
     PiSubmarine::Telemetry::Client::Udp::Source batteryTelemetrySource(
         telemetryClient,
         MakeChannelId(PiSubmarine::Telemetry::Channels::Api::BatteryMain));
+    PiSubmarine::Telemetry::Client::Udp::Source depthTelemetrySource(
+        telemetryClient,
+        MakeChannelId(PiSubmarine::Telemetry::Channels::Api::DepthMain));
+    PiSubmarine::Telemetry::Client::Udp::Source lampTelemetrySource(
+        telemetryClient,
+        MakeChannelId(PiSubmarine::Telemetry::Channels::Api::LampMain));
+    PiSubmarine::Telemetry::Client::Udp::Source proximityTelemetrySource(
+        telemetryClient,
+        MakeChannelId(PiSubmarine::Telemetry::Channels::Api::ProximityMain));
+    PiSubmarine::Telemetry::Client::Udp::Source videoTelemetrySource(
+        telemetryClient,
+        MakeChannelId(PiSubmarine::Telemetry::Channels::Api::VideoMain));
+    PiSubmarine::Ballast::Telemetry::Protobuf::Deserializer ballastTelemetryProvider(ballastTelemetrySource);
     PiSubmarine::Battery::Telemetry::Protobuf::Deserializer batteryTelemetryProvider(batteryTelemetrySource);
+    PiSubmarine::Depth::Telemetry::Protobuf::Deserializer depthTelemetryProvider(depthTelemetrySource);
+    PiSubmarine::Lamp::Telemetry::Protobuf::Deserializer lampTelemetryProvider(lampTelemetrySource);
+    PiSubmarine::Proximity::Telemetry::Protobuf::Deserializer proximityTelemetryProvider(proximityTelemetrySource);
+    PiSubmarine::Video::Telemetry::Protobuf::Deserializer videoTelemetryProvider(videoTelemetrySource);
 
     std::vector<std::unique_ptr<PiSubmarine::Telemetry::Client::Udp::Source>> motorTelemetrySources;
     std::vector<std::unique_ptr<PiSubmarine::Motor::Telemetry::Protobuf::Deserializer>> motorTelemetryProviders;
@@ -360,8 +426,12 @@ int main(int argc, char* argv[])
         leaseProxy,
         videoSubscriptionService,
         videoPipelineBuilder);
-    auto lampTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::LampController>(*fakeTelemetryProviders.Lamp);
+    auto ballastTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::BallastController>(ballastTelemetryProvider);
     auto batteryTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::BatteryController>(batteryTelemetryProvider);
+    auto depthTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::DepthController>(depthTelemetryProvider);
+    auto lampTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::LampController>(lampTelemetryProvider);
+    auto proximityTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::ProximityController>(proximityTelemetryProvider);
+    auto videoStatusTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::VideoStatusController>(videoTelemetryProvider);
 
     for (std::size_t index = 0; index < TelemetryMotorCount; ++index)
     {
@@ -379,6 +449,10 @@ int main(int argc, char* argv[])
         *lampTelemetryController,
         std::move(motorTelemetryControllerRefs),
         *batteryTelemetryController,
+        *ballastTelemetryController,
+        *depthTelemetryController,
+        *proximityTelemetryController,
+        *videoStatusTelemetryController,
         loggerFactory);
     auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
         fakeInputSink,
@@ -421,6 +495,18 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Video::Controller::SetSubscriptionEndpoint,
         Qt::QueuedConnection);
     QObject::connect(
+        ballastTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::BallastController::SnapshotChanged,
+        &ballastTelemetryViewModel,
+        &PiSubmarine::Operator::Station::Telemetry::View::Ballast::ViewModel::SetSnapshot,
+        Qt::QueuedConnection);
+    QObject::connect(
+        depthTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::DepthController::SnapshotChanged,
+        &depthTelemetryViewModel,
+        &PiSubmarine::Operator::Station::Telemetry::View::Depth::ViewModel::SetSnapshot,
+        Qt::QueuedConnection);
+    QObject::connect(
         lampTelemetryController.get(),
         &PiSubmarine::Operator::Station::Telemetry::LampController::SnapshotChanged,
         &lampTelemetryViewModel,
@@ -442,6 +528,18 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Telemetry::View::Battery::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
     QObject::connect(
+        proximityTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::ProximityController::SnapshotChanged,
+        &proximityTelemetryViewModel,
+        &PiSubmarine::Operator::Station::Telemetry::View::Proximity::ViewModel::SetSnapshot,
+        Qt::QueuedConnection);
+    QObject::connect(
+        videoStatusTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::VideoStatusController::SnapshotChanged,
+        &videoTelemetryViewModel,
+        &PiSubmarine::Operator::Station::Telemetry::View::Video::ViewModel::SetSnapshot,
+        Qt::QueuedConnection);
+    QObject::connect(
         &inputViewModel,
         &PiSubmarine::Operator::Station::Input::View::ViewModel::IntentUpdated,
         inputController.get(),
@@ -449,11 +547,15 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
 
     videoController->moveToThread(&controllerThread);
+    ballastTelemetryController->moveToThread(&controllerThread);
+    depthTelemetryController->moveToThread(&controllerThread);
     lampTelemetryController->moveToThread(&controllerThread);
     for (const auto& motorTelemetryController : motorTelemetryControllers)
     {
         motorTelemetryController->moveToThread(&controllerThread);
     }
+    proximityTelemetryController->moveToThread(&controllerThread);
+    videoStatusTelemetryController->moveToThread(&controllerThread);
     batteryTelemetryController->moveToThread(&controllerThread);
     telemetryController->moveToThread(&controllerThread);
     inputController->moveToThread(&controllerThread);
@@ -491,11 +593,15 @@ int main(int argc, char* argv[])
         QMetaObject::invokeMethod(telemetryController.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Stop, Qt::BlockingQueuedConnection);
 
         DeleteLaterOnObjectThread(videoController);
+        DeleteLaterOnObjectThread(ballastTelemetryController);
+        DeleteLaterOnObjectThread(depthTelemetryController);
         DeleteLaterOnObjectThread(lampTelemetryController);
         for (auto& motorTelemetryController : motorTelemetryControllers)
         {
             DeleteLaterOnObjectThread(motorTelemetryController);
         }
+        DeleteLaterOnObjectThread(proximityTelemetryController);
+        DeleteLaterOnObjectThread(videoStatusTelemetryController);
         DeleteLaterOnObjectThread(batteryTelemetryController);
         DeleteLaterOnObjectThread(telemetryController);
         DeleteLaterOnObjectThread(inputController);

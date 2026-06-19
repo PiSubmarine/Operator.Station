@@ -4,8 +4,12 @@
 #include <QThread>
 
 #include "PiSubmarine/Operator/Station/Telemetry/BatteryController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/BallastController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/DepthController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/ProximityController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h"
 
 namespace PiSubmarine::Operator::Station::Telemetry
 {
@@ -13,12 +17,20 @@ namespace PiSubmarine::Operator::Station::Telemetry
         LampController& lampController,
         std::vector<std::reference_wrapper<MotorController>> motorControllers,
         BatteryController& batteryController,
+        BallastController& ballastController,
+        DepthController& depthController,
+        ProximityController& proximityController,
+        VideoStatusController& videoStatusController,
         PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
         : QObject(parent)
         , m_LampController(lampController)
         , m_MotorControllers(std::move(motorControllers))
         , m_BatteryController(batteryController)
+        , m_BallastController(ballastController)
+        , m_DepthController(depthController)
+        , m_ProximityController(proximityController)
+        , m_VideoStatusController(videoStatusController)
         , m_Logger(loggerFactory.CreateLogger("Operator.Station.Telemetry.Controller"))
     {
     }
@@ -79,5 +91,9 @@ namespace PiSubmarine::Operator::Station::Telemetry
             motorController.Refresh();
         }
         m_BatteryController.Refresh();
+        m_BallastController.Refresh();
+        m_DepthController.Refresh();
+        m_ProximityController.Refresh();
+        m_VideoStatusController.Refresh();
     }
 }

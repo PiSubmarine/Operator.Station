@@ -19,6 +19,10 @@ namespace PiSubmarine::Operator::Station::Telemetry
     class LampController;
     class MotorController;
     class BatteryController;
+    class BallastController;
+    class DepthController;
+    class ProximityController;
+    class VideoStatusController;
 
     class Controller : public QObject, public ::PiSubmarine::Time::ITickable
     {
@@ -29,6 +33,10 @@ namespace PiSubmarine::Operator::Station::Telemetry
             LampController& lampController,
             std::vector<std::reference_wrapper<MotorController>> motorControllers,
             BatteryController& batteryController,
+            BallastController& ballastController,
+            DepthController& depthController,
+            ProximityController& proximityController,
+            VideoStatusController& videoStatusController,
             PiSubmarine::Logging::Api::IFactory& loggerFactory,
             QObject* parent = nullptr);
         ~Controller() override;
@@ -42,6 +50,10 @@ namespace PiSubmarine::Operator::Station::Telemetry
         LampController& m_LampController;
         std::vector<std::reference_wrapper<MotorController>> m_MotorControllers;
         BatteryController& m_BatteryController;
+        BallastController& m_BallastController;
+        DepthController& m_DepthController;
+        ProximityController& m_ProximityController;
+        VideoStatusController& m_VideoStatusController;
         std::shared_ptr<spdlog::logger> m_Logger;
         bool m_IsStarted = false;
     };
