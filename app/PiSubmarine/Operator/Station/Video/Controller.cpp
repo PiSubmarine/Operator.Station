@@ -75,6 +75,7 @@ namespace PiSubmarine::Operator::Station::Video
             return;
         }
 
+        // TODO Make sure that the timer is stopped in the same thread where timer belongs
         m_Timer.stop();
 
         if (!m_IsStarted && !m_Pipeline && !m_LeaseGrant.has_value())
