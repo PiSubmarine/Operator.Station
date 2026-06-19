@@ -5,8 +5,8 @@ include(FetchContent)
 project(${PISUBMARINE_MODULE_NAME}.Test LANGUAGES CXX)
 
 set(${PISUBMARINE_MODULE_NAME}.Test.Sources
-        "PiSubmarine/Operator/Station/ApplicationTest.cpp"
-        "PiSubmarine/Operator/Station/Video/VideoControllerTest.cpp")
+        "PiSubmarine/Operator/Station/Lease/SyncLeaseIssuerProxyTest.cpp"
+        "PiSubmarine/Operator/Station/Video/ControllerTest.cpp")
 
 enable_testing()
 
@@ -14,10 +14,10 @@ find_package(spdlog)
 find_package(GTest)
 
 add_executable(${PISUBMARINE_MODULE_NAME}.Test ${${PISUBMARINE_MODULE_NAME}.Test.Sources})
-target_include_directories(${PISUBMARINE_MODULE_NAME}.Test PRIVATE "../src")
+target_include_directories(${PISUBMARINE_MODULE_NAME}.Test PRIVATE "../app")
 PiSubmarineInitTarget(${PISUBMARINE_MODULE_NAME}.Test)
 
-target_link_libraries(${PISUBMARINE_MODULE_NAME}.Test PRIVATE ${PISUBMARINE_MODULE_NAME})
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.Test PRIVATE ${PISUBMARINE_MODULE_NAME}.AppCommon)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.Test PRIVATE PiSubmarine.Lease.Api.Mock)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.Test PRIVATE PiSubmarine.Video.Subscription.Api.Mock)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.Test PRIVATE spdlog::spdlog)
