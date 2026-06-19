@@ -308,13 +308,10 @@ namespace PiSubmarine::Operator::Station::Video
             return std::unexpected(Error::Api::MakeError(Error::Api::ErrorCondition::DeviceError));
         }
 
-        if (!m_Pipeline->IsRunning())
+        const auto playResult = m_Pipeline->Play();
+        if (!playResult.has_value())
         {
-            const auto playResult = m_Pipeline->Play();
-            if (!playResult.has_value())
-            {
-                return playResult;
-            }
+            return playResult;
         }
 
         m_IsDirty = false;

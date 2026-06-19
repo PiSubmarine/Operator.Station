@@ -88,12 +88,23 @@ namespace PiSubmarine::Operator::Station::Video::View
 
     Error::Api::Result<GstElement*> QmlVideoSinkTailFactory::CreateWindowsTail()
     {
-        const auto sinkResult = MakeElement("qml6d3d11sink", "video_sink", m_Logger);
-        if (!sinkResult.has_value())
+        auto* bin = gst_bin_new("video_tail");
+        if (bin == nullptr)
         {
-            return std::unexpected(sinkResult.error());
+            return std::unexpected(MakeDeviceError());
         }
 
+        const auto uploadResult = MakeElement("d3d11upload", "d3d11_upload", m_Logger);
+        const auto convertResult = MakeElement("d3d11convert", "d3d11_convert", m_Logger);
+        const auto sinkResult = MakeElement("qml6d3d11sink", "video_sink", m_Logger);
+        if (!uploadResult.has_value() || !convertResult.has_value() || !sinkResult.has_value())
+        {
+            gst_object_unref(GST_OBJECT(bin));
+            return std::unexpected(MakeDeviceError());
+        }
+
+        auto* upload = *uploadResult;
+        auto* convert = *convertResult;
         auto* sink = *sinkResult;
         g_object_set(
             G_OBJECT(sink),
@@ -102,7 +113,37 @@ namespace PiSubmarine::Operator::Station::Video::View
             "force-aspect-ratio",
             TRUE,
             nullptr);
-        return sink;
+
+        gst_bin_add_many(GST_BIN(bin), upload, convert, sink, nullptr);
+        if (!gst_element_link_many(upload, convert, sink, nullptr))
+        {
+            gst_object_unref(GST_OBJECT(bin));
+            return std::unexpected(MakeDeviceError());
+        }
+
+        auto* sinkPad = gst_element_get_static_pad(upload, "sink");
+        if (sinkPad == nullptr)
+        {
+            gst_object_unref(GST_OBJECT(bin));
+            return std::unexpected(MakeDeviceError());
+        }
+
+        auto* ghostPad = gst_ghost_pad_new("sink", sinkPad);
+        gst_object_unref(GST_OBJECT(sinkPad));
+        if (ghostPad == nullptr)
+        {
+            gst_object_unref(GST_OBJECT(bin));
+            return std::unexpected(MakeDeviceError());
+        }
+
+        if (!gst_element_add_pad(bin, ghostPad))
+        {
+            gst_object_unref(GST_OBJECT(ghostPad));
+            gst_object_unref(GST_OBJECT(bin));
+            return std::unexpected(MakeDeviceError());
+        }
+
+        return GST_ELEMENT(bin);
     }
 
     Error::Api::Result<GstElement*> QmlVideoSinkTailFactory::CreateLinuxTail()
