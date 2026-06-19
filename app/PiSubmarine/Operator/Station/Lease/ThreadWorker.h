@@ -25,15 +25,15 @@ namespace PiSubmarine::Operator::Station::Lease
             QObject* parent = nullptr);
 
         [[nodiscard]] bool EnqueueAcquireLease(const ::PiSubmarine::Lease::Api::LeaseRequest& request) override;
-        [[nodiscard]] std::optional<Error::Api::Result<::PiSubmarine::Lease::Api::LeaseGrant>>
+        [[nodiscard]] Error::Api::Result<::PiSubmarine::Lease::Api::LeaseGrant>
         TryTakeAcquireLeaseResult(const ::PiSubmarine::Lease::Api::LeaseRequest& request) override;
 
         [[nodiscard]] bool EnqueueRenewLease(const ::PiSubmarine::Lease::Api::LeaseId& leaseId) override;
-        [[nodiscard]] std::optional<Error::Api::Result<::PiSubmarine::Lease::Api::Lease>>
+        [[nodiscard]] Error::Api::Result<::PiSubmarine::Lease::Api::Lease>
         TryTakeRenewLeaseResult(const ::PiSubmarine::Lease::Api::LeaseId& leaseId) override;
 
         [[nodiscard]] bool EnqueueReleaseLease(const ::PiSubmarine::Lease::Api::LeaseId& leaseId) override;
-        [[nodiscard]] std::optional<Error::Api::Result<void>>
+        [[nodiscard]] Error::Api::Result<void>
         TryTakeReleaseLeaseResult(const ::PiSubmarine::Lease::Api::LeaseId& leaseId) override;
 
     private slots:
@@ -53,6 +53,7 @@ namespace PiSubmarine::Operator::Station::Lease
         using RenewState = RequestState<::PiSubmarine::Lease::Api::LeaseId, ::PiSubmarine::Lease::Api::Lease>;
         using ReleaseState = RequestState<::PiSubmarine::Lease::Api::LeaseId, void>;
 
+        [[nodiscard]] static Error::Api::Error MakeNotReadyError();
         [[nodiscard]] bool ScheduleProcessPending();
 
         ::PiSubmarine::Lease::Api::ILeaseIssuer& m_LeaseIssuer;

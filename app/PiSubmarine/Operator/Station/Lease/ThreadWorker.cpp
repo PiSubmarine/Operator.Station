@@ -7,6 +7,9 @@
 
 #include <spdlog/spdlog.h>
 
+#include "PiSubmarine/Error/Api/ErrorCondition.h"
+#include "PiSubmarine/Error/Api/MakeError.h"
+
 namespace PiSubmarine::Operator::Station::Lease
 {
     namespace
@@ -55,7 +58,7 @@ namespace PiSubmarine::Operator::Station::Lease
         return ScheduleProcessPending();
     }
 
-    std::optional<Error::Api::Result<::PiSubmarine::Lease::Api::LeaseGrant>>
+    Error::Api::Result<::PiSubmarine::Lease::Api::LeaseGrant>
     ThreadWorker::TryTakeAcquireLeaseResult(const ::PiSubmarine::Lease::Api::LeaseRequest& request)
     {
         const auto key = MakeResourceKey(request);
@@ -64,12 +67,12 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto iterator = m_AcquireStates.find(key);
         if (iterator == m_AcquireStates.end() || !iterator->second.Completed.has_value())
         {
-            return std::nullopt;
+            return std::unexpected(MakeNotReadyError());
         }
 
         auto result = std::move(iterator->second.Completed);
         m_AcquireStates.erase(iterator);
-        return result;
+        return std::move(*result);
     }
 
     bool ThreadWorker::EnqueueRenewLease(const ::PiSubmarine::Lease::Api::LeaseId& leaseId)
@@ -91,7 +94,7 @@ namespace PiSubmarine::Operator::Station::Lease
         return ScheduleProcessPending();
     }
 
-    std::optional<Error::Api::Result<::PiSubmarine::Lease::Api::Lease>>
+    Error::Api::Result<::PiSubmarine::Lease::Api::Lease>
     ThreadWorker::TryTakeRenewLeaseResult(const ::PiSubmarine::Lease::Api::LeaseId& leaseId)
     {
         const auto key = MakeLeaseKey(leaseId);
@@ -100,12 +103,12 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto iterator = m_RenewStates.find(key);
         if (iterator == m_RenewStates.end() || !iterator->second.Completed.has_value())
         {
-            return std::nullopt;
+            return std::unexpected(MakeNotReadyError());
         }
 
         auto result = std::move(iterator->second.Completed);
         m_RenewStates.erase(iterator);
-        return result;
+        return std::move(*result);
     }
 
     bool ThreadWorker::EnqueueReleaseLease(const ::PiSubmarine::Lease::Api::LeaseId& leaseId)
@@ -127,7 +130,7 @@ namespace PiSubmarine::Operator::Station::Lease
         return ScheduleProcessPending();
     }
 
-    std::optional<Error::Api::Result<void>>
+    Error::Api::Result<void>
     ThreadWorker::TryTakeReleaseLeaseResult(const ::PiSubmarine::Lease::Api::LeaseId& leaseId)
     {
         const auto key = MakeLeaseKey(leaseId);
@@ -136,12 +139,12 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto iterator = m_ReleaseStates.find(key);
         if (iterator == m_ReleaseStates.end() || !iterator->second.Completed.has_value())
         {
-            return std::nullopt;
+            return std::unexpected(MakeNotReadyError());
         }
 
         auto result = std::move(iterator->second.Completed);
         m_ReleaseStates.erase(iterator);
-        return result;
+        return std::move(*result);
     }
 
     void ThreadWorker::ProcessPending()
@@ -235,5 +238,10 @@ namespace PiSubmarine::Operator::Station::Lease
     bool ThreadWorker::ScheduleProcessPending()
     {
         return QMetaObject::invokeMethod(this, &ThreadWorker::ProcessPending, Qt::QueuedConnection);
+    }
+
+    Error::Api::Error ThreadWorker::MakeNotReadyError()
+    {
+        return Error::Api::MakeError(Error::Api::ErrorCondition::NotReady);
     }
 }

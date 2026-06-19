@@ -26,18 +26,20 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto key = MakeResourceKey(request);
 
         std::lock_guard lock(m_Mutex);
+        const auto readyResult = m_AsyncLeaseIssuer.TryTakeAcquireLeaseResult(request);
 
-        if (auto readyResult = m_AsyncLeaseIssuer.TryTakeAcquireLeaseResult(request); readyResult.has_value())
+        if (readyResult.has_value())
         {
             m_PendingAcquireRequests.erase(key);
-            if (readyResult->has_value())
-            {
-                m_CachedGrantsByResource[key] = **readyResult;
-                m_CachedLeasesById[(**readyResult).Lease.Id.Value] = (**readyResult).Lease;
-                return **readyResult;
-            }
+            m_CachedGrantsByResource[key] = *readyResult;
+            m_CachedLeasesById[readyResult->Lease.Id.Value] = readyResult->Lease;
+            return *readyResult;
+        }
 
-            return std::unexpected(readyResult->error());
+        if (readyResult.error().Condition != Error::Api::ErrorCondition::NotReady)
+        {
+            m_PendingAcquireRequests.erase(key);
+            return std::unexpected(readyResult.error());
         }
 
         if (const auto cachedGrant = m_CachedGrantsByResource.find(key); cachedGrant != m_CachedGrantsByResource.end())
@@ -64,17 +66,19 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto key = MakeLeaseKey(leaseId);
 
         std::lock_guard lock(m_Mutex);
+        const auto readyResult = m_AsyncLeaseIssuer.TryTakeRenewLeaseResult(leaseId);
 
-        if (auto readyResult = m_AsyncLeaseIssuer.TryTakeRenewLeaseResult(leaseId); readyResult.has_value())
+        if (readyResult.has_value())
         {
             m_PendingRenewRequests.erase(key);
-            if (readyResult->has_value())
-            {
-                m_CachedLeasesById[key] = **readyResult;
-                return **readyResult;
-            }
+            m_CachedLeasesById[key] = *readyResult;
+            return *readyResult;
+        }
 
-            return std::unexpected(readyResult->error());
+        if (readyResult.error().Condition != Error::Api::ErrorCondition::NotReady)
+        {
+            m_PendingRenewRequests.erase(key);
+            return std::unexpected(readyResult.error());
         }
 
         const auto cachedLease = m_CachedLeasesById.find(key);
@@ -106,8 +110,9 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto key = MakeLeaseKey(leaseId);
 
         std::lock_guard lock(m_Mutex);
+        const auto readyResult = m_AsyncLeaseIssuer.TryTakeReleaseLeaseResult(leaseId);
 
-        if (auto readyResult = m_AsyncLeaseIssuer.TryTakeReleaseLeaseResult(leaseId); readyResult.has_value())
+        if (readyResult.has_value())
         {
             m_PendingReleaseRequests.erase(key);
             m_CachedLeasesById.erase(key);
@@ -123,7 +128,13 @@ namespace PiSubmarine::Operator::Station::Lease
                 ++iterator;
             }
 
-            return *readyResult;
+            return {};
+        }
+
+        if (readyResult.error().Condition != Error::Api::ErrorCondition::NotReady)
+        {
+            m_PendingReleaseRequests.erase(key);
+            return std::unexpected(readyResult.error());
         }
 
         if (m_PendingReleaseRequests.contains(key))
@@ -158,6 +169,6 @@ namespace PiSubmarine::Operator::Station::Lease
 
     Error::Api::ErrorCondition SyncLeaseIssuerProxy::GetNotReadyCondition()
     {
-        return static_cast<Error::Api::ErrorCondition>(3);
+        return Error::Api::ErrorCondition::NotReady;
     }
 }
