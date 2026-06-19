@@ -1,5 +1,7 @@
 #include "PiSubmarine/Operator/Station/Lease/SyncLeaseIssuerProxy.h"
 
+#include <PiSubmarine/Error/Api/MakeError.h>
+
 namespace PiSubmarine::Operator::Station::Lease
 {
     namespace

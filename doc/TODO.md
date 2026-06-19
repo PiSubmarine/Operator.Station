@@ -26,6 +26,9 @@
   `Battery.Telemetry.Protobuf`, `Lamp.Telemetry.Protobuf`, `Motor.Telemetry.Protobuf`,
   `Depth.Telemetry.Protobuf`, `Ballast.Telemetry.Protobuf`, `Proximity.Telemetry.Protobuf`,
   `Video.Telemetry.Protobuf`.
+- [x] Add the currently required telemetry transport/security dependencies to `app/CMakeLists.txt`:
+  `Telemetry.Client.Udp`, `Battery.Telemetry.Protobuf`,
+  `Motor.Telemetry.Protobuf`, `Security.Aead.Openssl`, `Security.Nonce.Openssl`, `Udp.Asio`.
 - [ ] Add any required transport/security dependencies pulled in by the real clients if they are not already reachable through transitive links.
 - [ ] Replace fake/local objects in `main.cpp` with real composition-root wiring behind CLI switches.
 
@@ -52,13 +55,16 @@
 
 ## Telemetry transport
 
-- [ ] Introduce `Telemetry.Client.Udp::Client` in the composition root when `--fake-telemetry` is not set.
-- [ ] Create `Telemetry.Channels.Api` and move shared telemetry channel ids there.
-- [ ] Add per-channel `Telemetry.Client.Udp::Source` adapters for each domain consumed by the UI.
-- [ ] Replace fake telemetry providers with protobuf deserializers:
-  `Lamp.Telemetry.Protobuf::Deserializer`,
+- [x] Introduce `Telemetry.Client.Udp::Client` in the composition root.
+- [ ] Replace the temporary telemetry endpoint assumption of `127.0.0.1:--telemetry-port` with the final `--telemetry-server <host:port>` option.
+- [x] Create `Telemetry.Channels.Api` and move shared telemetry channel ids there.
+- [x] Add per-channel `Telemetry.Client.Udp::Source` adapters for battery and motor domains consumed by the UI.
+- [x] Replace the current battery/motor copied channel-id strings in `Operator.Station` and `Drone.Server.Fake` with `Telemetry.Channels.Api`.
+- [ ] Replace fake telemetry providers with protobuf deserializers for all available UI domains.
+- [x] Replace fake battery and motor telemetry providers with protobuf deserializers:
   `Motor.Telemetry.Protobuf::Deserializer`,
   `Battery.Telemetry.Protobuf::Deserializer`.
+- [ ] Replace the lamp fake provider with `Lamp.Telemetry.Protobuf::Deserializer` once a shared lamp telemetry channel is defined and produced by the server.
 - [ ] Add new UI telemetry paths for:
   `Proximity.Telemetry.Api`,
   `Ballast.Telemetry.Api`,

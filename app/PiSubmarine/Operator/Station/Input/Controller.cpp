@@ -40,7 +40,6 @@ namespace PiSubmarine::Operator::Station::Input
         }
 
         ::PiSubmarine::Control::Api::Input::OperatorCommand command{
-            .LeaseId = ::PiSubmarine::Lease::Api::LeaseId{.Value = "operator-station-input"},
             .Movement = *horizontalResult,
             .VerticalControl = ::PiSubmarine::Control::Vertical::Api::Command::SetBallastPositionTo(
                 NormalizedFraction(ballast)),

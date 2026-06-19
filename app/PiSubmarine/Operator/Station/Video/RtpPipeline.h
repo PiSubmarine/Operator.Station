@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Operator/Station/Video/Config.h"
 #include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"

@@ -2,13 +2,10 @@
 
 #include <chrono>
 #include <functional>
-#include <optional>
 #include <vector>
 
 #include <QObject>
 
-#include "PiSubmarine/Error/Api/Error.h"
-#include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Time/ITickable.h"
 
@@ -29,7 +26,6 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
     public:
         Controller(
-            ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
             LampController& lampController,
             std::vector<std::reference_wrapper<MotorController>> motorControllers,
             BatteryController& batteryController,
@@ -43,17 +39,10 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
     private:
         void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
-        [[nodiscard]] static bool IsNotReadyError(const Error::Api::Error& error);
-        [[nodiscard]] Error::Api::Result<void> EnsureLease(const std::chrono::nanoseconds& uptime);
-        void RenewLease(const std::chrono::nanoseconds& uptime);
-
-        ::PiSubmarine::Lease::Api::ILeaseIssuer& m_LeaseIssuer;
         LampController& m_LampController;
         std::vector<std::reference_wrapper<MotorController>> m_MotorControllers;
         BatteryController& m_BatteryController;
         std::shared_ptr<spdlog::logger> m_Logger;
-        std::optional<::PiSubmarine::Lease::Api::Lease> m_Lease;
-        std::chrono::nanoseconds m_NextRenewal{0};
         bool m_IsStarted = false;
     };
 }

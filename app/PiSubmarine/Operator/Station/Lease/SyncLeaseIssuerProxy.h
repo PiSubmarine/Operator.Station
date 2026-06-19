@@ -1,10 +1,8 @@
 #pragma once
 
 #include <mutex>
-#include <optional>
 #include <unordered_map>
 
-#include "PiSubmarine/Error/Api/MakeError.h"
 #include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Operator/Station/Lease/IAsyncLeaseIssuer.h"
 

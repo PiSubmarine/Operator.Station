@@ -1,16 +1,16 @@
+#include <array>
 #include <chrono>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
-#include <QGuiApplication>
 #include <QRegularExpression>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QQuickItem>
 #include <QThread>
 #include <QUrl>
 #include <QVariant>
@@ -18,8 +18,9 @@
 #include <gst/gst.h>
 #include <spdlog/logger.h>
 
+#include "PiSubmarine/Battery/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Error/Api/Result.h"
-#include "PiSubmarine/Gstreamer/Build/Plugins.h"
+#include "PiSubmarine/Motor/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Operator/Station/Logging/QtLog.h"
 #include "PiSubmarine/Operator/Station/Logging/SpdlogFactory.h"
 #include "PiSubmarine/Operator/Station/Input/Controller.h"
@@ -44,10 +45,32 @@
 #include "PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.h"
 #include "PiSubmarine/Operator/Station/Video/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.h"
+#include "PiSubmarine/Security/Aead/Openssl/Provider.h"
+#include "PiSubmarine/Security/Nonce/Openssl/Provider.h"
+#include "PiSubmarine/Telemetry/Api/ChannelId.h"
+#include "PiSubmarine/Telemetry/Channels/Api/Channels.h"
+#include "PiSubmarine/Telemetry/Client/Udp/Client.h"
+#include "PiSubmarine/Telemetry/Client/Udp/Source.h"
+#include "PiSubmarine/Udp/Api/Endpoint.h"
+#include "PiSubmarine/Udp/Asio/Socket.h"
 #include "PiSubmarine/Video/Subscription/Api/IService.h"
 
 namespace
 {
+    [[nodiscard]] PiSubmarine::Telemetry::Api::ChannelId MakeChannelId(const std::string_view value)
+    {
+        return PiSubmarine::Telemetry::Api::ChannelId{.Value = std::string(value)};
+    }
+
+    constexpr std::size_t TelemetryMotorCount = 4;
+    constexpr std::size_t TelemetryReceiveQueueCapacity = 16;
+    constexpr std::string_view TelemetryServerAddress = "127.0.0.1";
+    const std::array<std::string_view, TelemetryMotorCount> MotorChannelIds{
+        PiSubmarine::Telemetry::Channels::Api::MotorFrontLeft,
+        PiSubmarine::Telemetry::Channels::Api::MotorFrontRight,
+        PiSubmarine::Telemetry::Channels::Api::MotorRearLeft,
+        PiSubmarine::Telemetry::Channels::Api::MotorRearRight};
+
     [[nodiscard]] std::optional<spdlog::level::level_enum> ParseLogLevel(const QString& value)
     {
         const auto normalizedValue = value.trimmed().toLower();
@@ -186,7 +209,7 @@ int main(int argc, char* argv[])
         "10ms"));
     parser.addOption(QCommandLineOption("video-bind-address", "Local RTP bind address.", "address", "0.0.0.0"));
     parser.addOption(QCommandLineOption("video-port", "Local RTP bind port.", "port", "5004"));
-    parser.addOption(QCommandLineOption("telemetry-port", "Local telemetry subscription port.", "port", "6100"));
+    parser.addOption(QCommandLineOption("telemetry-port", "Telemetry UDP server port on 127.0.0.1.", "port", "6100"));
     parser.process(application);
 
     const auto logLevel = ParseLogLevel(parser.value("log-level"));
@@ -224,9 +247,6 @@ int main(int argc, char* argv[])
     PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel lampTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Battery::ViewModel batteryTelemetryViewModel;
 
-    constexpr std::size_t TelemetryMotorCount = 4;
-    auto fakeTelemetryProviders = PiSubmarine::Operator::Station::Telemetry::CreateFakeProviders(TelemetryMotorCount);
-
     std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>> motorTelemetryViewModels;
     std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllers;
     std::vector<std::reference_wrapper<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllerRefs;
@@ -241,9 +261,6 @@ int main(int argc, char* argv[])
     {
         motorTelemetryViewModels.push_back(
             std::make_unique<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>());
-        motorTelemetryControllers.push_back(
-            std::make_unique<PiSubmarine::Operator::Station::Telemetry::MotorController>(*fakeTelemetryProviders.Motors.at(index)));
-        motorTelemetryControllerRefs.emplace_back(*motorTelemetryControllers.back());
         motorTelemetryViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(motorTelemetryViewModels.back().get())));
     }
 
@@ -292,6 +309,39 @@ int main(int argc, char* argv[])
     LocalVideoSubscriptionService videoSubscriptionService;
     PiSubmarine::Operator::Station::Input::FakeSink fakeInputSink;
     PiSubmarine::Operator::Station::Video::View::QmlVideoSinkTailFactory videoTailFactory(*videoItem, logger);
+    auto fakeTelemetryProviders = PiSubmarine::Operator::Station::Telemetry::CreateFakeProviders(TelemetryMotorCount);
+    PiSubmarine::Udp::Asio::Socket telemetrySocket(TelemetryReceiveQueueCapacity);
+    PiSubmarine::Security::Aead::Openssl::Provider telemetryAeadProvider;
+    PiSubmarine::Security::Nonce::Openssl::Provider telemetryNonceProvider;
+
+    const auto telemetryServerPort = static_cast<std::uint16_t>(parser.value("telemetry-port").toUShort());
+    const auto telemetryBindResult = telemetrySocket.Bind(PiSubmarine::Udp::Api::Endpoint{
+        .Address = "0.0.0.0",
+        .Port = 0});
+    if (!telemetryBindResult.has_value())
+    {
+        logger->error("Failed to bind telemetry UDP socket");
+        return 1;
+    }
+
+    PiSubmarine::Telemetry::Client::Udp::Client telemetryClient(
+        leaseProxy,
+        telemetryAeadProvider,
+        telemetryNonceProvider,
+        telemetrySocket,
+        telemetrySocket,
+        PiSubmarine::Udp::Api::Endpoint{
+            .Address = std::string(TelemetryServerAddress),
+            .Port = telemetryServerPort});
+    PiSubmarine::Telemetry::Client::Udp::Source batteryTelemetrySource(
+        telemetryClient,
+        MakeChannelId(PiSubmarine::Telemetry::Channels::Api::BatteryMain));
+    PiSubmarine::Battery::Telemetry::Protobuf::Deserializer batteryTelemetryProvider(batteryTelemetrySource);
+
+    std::vector<std::unique_ptr<PiSubmarine::Telemetry::Client::Udp::Source>> motorTelemetrySources;
+    std::vector<std::unique_ptr<PiSubmarine::Motor::Telemetry::Protobuf::Deserializer>> motorTelemetryProviders;
+    motorTelemetrySources.reserve(TelemetryMotorCount);
+    motorTelemetryProviders.reserve(TelemetryMotorCount);
 
     PiSubmarine::Operator::Station::Video::Config videoConfig;
     videoConfig.ReceiveEndpoint = {
@@ -311,9 +361,21 @@ int main(int argc, char* argv[])
         videoSubscriptionService,
         videoPipelineBuilder);
     auto lampTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::LampController>(*fakeTelemetryProviders.Lamp);
-    auto batteryTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::BatteryController>(*fakeTelemetryProviders.Battery);
+    auto batteryTelemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::BatteryController>(batteryTelemetryProvider);
+
+    for (std::size_t index = 0; index < TelemetryMotorCount; ++index)
+    {
+        motorTelemetrySources.push_back(std::make_unique<PiSubmarine::Telemetry::Client::Udp::Source>(
+            telemetryClient,
+            MakeChannelId(MotorChannelIds.at(index))));
+        motorTelemetryProviders.push_back(
+            std::make_unique<PiSubmarine::Motor::Telemetry::Protobuf::Deserializer>(*motorTelemetrySources.back()));
+        motorTelemetryControllers.push_back(
+            std::make_unique<PiSubmarine::Operator::Station::Telemetry::MotorController>(*motorTelemetryProviders.back()));
+        motorTelemetryControllerRefs.emplace_back(*motorTelemetryControllers.back());
+    }
+
     auto telemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::Controller>(
-        leaseProxy,
         *lampTelemetryController,
         std::move(motorTelemetryControllerRefs),
         *batteryTelemetryController,
@@ -328,6 +390,16 @@ int main(int argc, char* argv[])
     if (!controllerTickRunner->AddTickable(*videoController).has_value())
     {
         logger->error("Failed to add video controller to controllers tick runner");
+        return 1;
+    }
+    if (!controllerTickRunner->AddTickable(telemetrySocket).has_value())
+    {
+        logger->error("Failed to add telemetry socket to controllers tick runner");
+        return 1;
+    }
+    if (!controllerTickRunner->AddTickable(telemetryClient).has_value())
+    {
+        logger->error("Failed to add telemetry client to controllers tick runner");
         return 1;
     }
     if (!controllerTickRunner->AddTickable(*telemetryController).has_value())
