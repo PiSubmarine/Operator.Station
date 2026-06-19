@@ -102,6 +102,26 @@ namespace
         ::PiSubmarine::Video::Subscription::Api::SubscribeRequest m_LastRequest{};
         ::PiSubmarine::Lease::Api::LeaseId m_LastLeaseId{};
     };
+
+    template <typename TObject>
+    void DeleteLaterOnObjectThread(std::unique_ptr<TObject>& object)
+    {
+        if (!object)
+        {
+            return;
+        }
+
+        auto* objectThread = object->thread();
+        if (objectThread == nullptr || QThread::currentThread() == objectThread)
+        {
+            object->deleteLater();
+            object.release();
+            return;
+        }
+
+        QMetaObject::invokeMethod(object.get(), &QObject::deleteLater, Qt::BlockingQueuedConnection);
+        object.release();
+    }
 }
 
 int main(int argc, char* argv[])
@@ -306,8 +326,20 @@ int main(int argc, char* argv[])
 
     QObject::connect(&application, &QGuiApplication::aboutToQuit, &application, [&]()
     {
+        // TODO Controllers' destruction flow looks inconsistent between each other.
         QMetaObject::invokeMethod(videoController.get(), &PiSubmarine::Operator::Station::Video::Controller::Stop, Qt::BlockingQueuedConnection);
         QMetaObject::invokeMethod(telemetryController.get(), &PiSubmarine::Operator::Station::Telemetry::Controller::Stop, Qt::BlockingQueuedConnection);
+
+        DeleteLaterOnObjectThread(videoController);
+        DeleteLaterOnObjectThread(lampTelemetryController);
+        for (auto& motorTelemetryController : motorTelemetryControllers)
+        {
+            DeleteLaterOnObjectThread(motorTelemetryController);
+        }
+        DeleteLaterOnObjectThread(batteryTelemetryController);
+        DeleteLaterOnObjectThread(telemetryController);
+        DeleteLaterOnObjectThread(inputController);
+
         controllerThread.quit();
         controllerThread.wait();
         leaseThread.quit();

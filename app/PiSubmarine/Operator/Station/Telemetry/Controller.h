@@ -35,6 +35,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
             BatteryController& batteryController,
             PiSubmarine::Logging::Api::IFactory& loggerFactory,
             QObject* parent = nullptr);
+        ~Controller() override;
 
     public slots:
         void Start();

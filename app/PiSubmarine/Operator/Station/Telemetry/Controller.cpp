@@ -29,6 +29,11 @@ namespace PiSubmarine::Operator::Station::Telemetry
         connect(&m_Timer, &QTimer::timeout, this, &Controller::Tick);
     }
 
+    Controller::~Controller()
+    {
+        Stop();
+    }
+
     void Controller::Start()
     {
         if (thread() != nullptr && QThread::currentThread() != thread())
