@@ -140,11 +140,6 @@ namespace PiSubmarine::Operator::Station::Video
         m_IsDirty = true;
     }
 
-    void Controller::InvalidatePipeline()
-    {
-        m_IsDirty = true;
-    }
-
     Status Controller::GetStatus() const
     {
         return {

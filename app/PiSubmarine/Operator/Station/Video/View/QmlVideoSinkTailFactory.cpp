@@ -79,16 +79,6 @@ namespace PiSubmarine::Operator::Station::Video::View
             return std::unexpected(MakeNotReadyError());
         }
 
-        if (m_VideoSurfaceItem.width() <= 0.0 || m_VideoSurfaceItem.height() <= 0.0)
-        {
-            SPDLOG_LOGGER_DEBUG(
-                m_Logger,
-                "Video surface item size is not ready yet: {}x{}",
-                m_VideoSurfaceItem.width(),
-                m_VideoSurfaceItem.height());
-            return std::unexpected(MakeNotReadyError());
-        }
-
 #if defined(_WIN32)
         return CreateWindowsTail();
 #else
