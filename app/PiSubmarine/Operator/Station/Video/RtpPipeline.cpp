@@ -31,6 +31,12 @@ namespace PiSubmarine::Operator::Station::Video
 		{
 			throw std::runtime_error("Failed to construct GStreamer video pipeline");
 		}
+
+        const auto playResult = Play();
+        if (!playResult.has_value())
+        {
+            throw std::runtime_error("Failed to start GStreamer video pipeline");
+        }
 	}
 
 	RtpPipeline::~RtpPipeline()

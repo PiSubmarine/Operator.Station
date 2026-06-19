@@ -78,6 +78,31 @@ namespace
         return std::nullopt;
     }
 
+    [[nodiscard]] bool PrepareGstreamerForQml(const std::shared_ptr<spdlog::logger>& logger)
+    {
+        if (!PiSubmarine::Operator::Station::Video::GstreamerPipeline::EnsureGstreamerInitialized(logger))
+        {
+            return false;
+        }
+
+#if defined(_WIN32)
+        if (auto* warmupSink = gst_element_factory_make("qml6d3d11sink", nullptr))
+        {
+            gst_object_unref(GST_OBJECT(warmupSink));
+        }
+        else
+        {
+            if (logger)
+            {
+                logger->error("Failed to warm up qml6d3d11sink before QML load");
+            }
+            return false;
+        }
+#endif
+
+        return true;
+    }
+
     class LocalVideoSubscriptionService final : public ::PiSubmarine::Video::Subscription::Api::IService
     {
     public:
@@ -133,7 +158,7 @@ int main(int argc, char* argv[])
 
 
     const auto logger = loggerFactory.CreateLogger("Operator.Station.Main");
-    if (!logger || !PiSubmarine::Operator::Station::Video::GstreamerPipeline::EnsureGstreamerInitialized(logger))
+    if (!logger || !PrepareGstreamerForQml(logger))
     {
         return 1;
     }
