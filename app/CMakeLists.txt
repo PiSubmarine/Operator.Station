@@ -58,6 +58,11 @@ PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Telemetry.Protobu
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Subscription.Api.git" "")
 
 add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
+        PiSubmarine/Operator/Station/Composition/FakeTelemetry.cpp
+        PiSubmarine/Operator/Station/Composition/FakeTelemetry.h
+        PiSubmarine/Operator/Station/Composition/ITelemetry.h
+        PiSubmarine/Operator/Station/Composition/RemoteTelemetry.cpp
+        PiSubmarine/Operator/Station/Composition/RemoteTelemetry.h
         PiSubmarine/Operator/Station/Logging/QtLog.cpp
         PiSubmarine/Operator/Station/Logging/QtLog.h
         PiSubmarine/Operator/Station/Logging/SpdlogFactory.cpp
