@@ -570,6 +570,11 @@ int main(int argc, char* argv[])
 
         controllerThread.quit();
         controllerThread.wait();
+
+        // Telemetry owns the UDP client that releases its lease in the destructor.
+        // Destroy it before the lease worker shuts down so the release request can still be processed.
+        telemetry.reset();
+
         leaseThread.quit();
         leaseThread.wait();
     });
