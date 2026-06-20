@@ -86,9 +86,9 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
 
         m_LampController.Refresh();
-        for (MotorController& motorController : m_MotorControllers)
+        for (auto& motorController : m_MotorControllers)
         {
-            motorController.Refresh();
+            static_cast<MotorController&>(motorController).Refresh();
         }
         m_BatteryController.Refresh();
         m_BallastController.Refresh();

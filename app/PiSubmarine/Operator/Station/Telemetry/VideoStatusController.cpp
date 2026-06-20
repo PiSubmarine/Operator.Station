@@ -13,6 +13,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         const auto statusResult = m_Provider.GetStatus();
         if (!statusResult.has_value())
         {
+            // TODO User-visible error reporting.
             return;
         }
 
