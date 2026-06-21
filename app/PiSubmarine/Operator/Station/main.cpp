@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
         "Set controllers thread tick period. Supported units: ns, us, ms, s.",
         "duration",
         "10ms"));
-    parser.addOption(QCommandLineOption("video-bind", "Local RTP bind endpoint host:port.", "endpoint", "0.0.0.0:5004"));
+    parser.addOption(QCommandLineOption("video-bind", "Local RTP bind endpoint host:port.", "endpoint", "0.0.0.0:5005"));
     parser.addOption(QCommandLineOption("telemetry-server", "Telemetry UDP server endpoint host:port.", "endpoint", "127.0.0.1:6100"));
     parser.process(application);
 

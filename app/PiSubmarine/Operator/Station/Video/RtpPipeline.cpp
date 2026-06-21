@@ -81,6 +81,13 @@ namespace PiSubmarine::Operator::Station::Video
 			"caps",
 			caps,
 			nullptr);
+		g_object_set(
+			jitterBufferElement,
+			"latency",
+			0u,
+			"drop-on-latency",
+			TRUE,
+			nullptr);
 		gst_caps_unref(caps);
 
 		gst_bin_add_many(

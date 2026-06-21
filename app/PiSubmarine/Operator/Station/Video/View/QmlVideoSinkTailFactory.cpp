@@ -112,6 +112,8 @@ namespace PiSubmarine::Operator::Station::Video::View
             static_cast<gpointer>(&m_VideoSurfaceItem),
             "force-aspect-ratio",
             TRUE,
+            "sync",
+            FALSE,
             nullptr);
 
         gst_bin_add_many(GST_BIN(bin), upload, convert, sink, nullptr);
@@ -172,6 +174,8 @@ namespace PiSubmarine::Operator::Station::Video::View
             static_cast<gpointer>(&m_VideoSurfaceItem),
             "force-aspect-ratio",
             TRUE,
+            "sync",
+            FALSE,
             nullptr);
 
         gst_bin_add_many(GST_BIN(bin), upload, convert, sink, nullptr);
