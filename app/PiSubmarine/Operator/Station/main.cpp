@@ -14,6 +14,7 @@
 #include <QQuickItem>
 #include <QRegularExpression>
 #include <QQmlApplicationEngine>
+#include <QQmlComponent>
 #include <QQmlContext>
 #include <QThread>
 #include <QUrl>
@@ -186,6 +187,63 @@ namespace
 
         QMetaObject::invokeMethod(object.get(), &QObject::deleteLater, Qt::BlockingQueuedConnection);
         object.release();
+    }
+
+    [[nodiscard]] QQuickItem* AttachVideoSurfaceItem(
+        QQmlApplicationEngine& engine,
+        QQuickItem& videoSurfaceHost,
+        const std::shared_ptr<spdlog::logger>& logger)
+    {
+        auto resizeToHost = [&videoSurfaceHost](QQuickItem& item)
+        {
+            item.setParent(&videoSurfaceHost);
+            item.setParentItem(&videoSurfaceHost);
+            item.setX(0);
+            item.setY(0);
+            item.setWidth(videoSurfaceHost.width());
+            item.setHeight(videoSurfaceHost.height());
+
+            QObject::connect(&videoSurfaceHost, &QQuickItem::widthChanged, &item, [&videoSurfaceHost, &item]()
+            {
+                item.setWidth(videoSurfaceHost.width());
+            });
+            QObject::connect(&videoSurfaceHost, &QQuickItem::heightChanged, &item, [&videoSurfaceHost, &item]()
+            {
+                item.setHeight(videoSurfaceHost.height());
+            });
+        };
+
+#if defined(_WIN32)
+        QQmlComponent component(
+            &engine,
+            QUrl("qrc:/PiSubmarine/Operator/Station/View/WindowsVideoSurface.qml"));
+
+        if (component.isError())
+        {
+            for (const auto& error : component.errors())
+            {
+                SPDLOG_LOGGER_ERROR(logger, "Failed to prepare Windows video surface component: {}", error.toString().toStdString());
+            }
+            return nullptr;
+        }
+
+        auto* object = component.create(engine.rootContext());
+        auto* item = qobject_cast<QQuickItem*>(object);
+        if (item == nullptr)
+        {
+            SPDLOG_LOGGER_ERROR(logger, "Windows video surface component did not create a QQuickItem");
+            delete object;
+            return nullptr;
+        }
+
+        resizeToHost(*item);
+        return item;
+#else
+        auto* item = new PiSubmarine::Operator::Station::Video::View::VideoSurfaceItem(&videoSurfaceHost);
+        item->setObjectName("videoSurface");
+        resizeToHost(*item);
+        return item;
+#endif
     }
 }
 
@@ -363,19 +421,7 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty("videoTelemetryViewModel", &videoTelemetryViewModel);
     engine.rootContext()->setContextProperty("videoOverlayViewModels", videoOverlayViewModelList);
     engine.rootContext()->setContextProperty("batteryTelemetryViewModel", &batteryTelemetryViewModel);
-    qmlRegisterType<PiSubmarine::Operator::Station::Video::View::VideoSurfaceItem>(
-        "PiSubmarine.Operator.Station",
-        1,
-        0,
-        "VideoSurfaceItem");
-
-    const QUrl mainWindowUrl(
-#if defined(_WIN32)
-        "qrc:/PiSubmarine/Operator/Station/qml/Main.Windows.qml"
-#else
-        "qrc:/PiSubmarine/Operator/Station/qml/Main.qml"
-#endif
-    );
+    const QUrl mainWindowUrl("qrc:/PiSubmarine/Operator/Station/qml/Main.qml");
     engine.load(mainWindowUrl);
     if (engine.rootObjects().isEmpty())
     {
@@ -383,10 +429,17 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    auto* videoItem = engine.rootObjects().front()->findChild<QQuickItem*>("videoSurface");
+    auto* videoSurfaceHost = engine.rootObjects().front()->findChild<QQuickItem*>("videoSurfaceHost");
+    if (videoSurfaceHost == nullptr)
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to locate QML video surface host item");
+        return 1;
+    }
+
+    auto* videoItem = AttachVideoSurfaceItem(engine, *videoSurfaceHost, logger);
     if (videoItem == nullptr)
     {
-        SPDLOG_LOGGER_CRITICAL(logger, "Failed to locate QML video surface item");
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to create platform video surface item");
         return 1;
     }
 

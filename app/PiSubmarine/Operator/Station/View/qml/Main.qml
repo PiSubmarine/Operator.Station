@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import PiSubmarine.Operator.Station 1.0
 
 ApplicationWindow {
     visible: true
@@ -23,11 +22,13 @@ ApplicationWindow {
             color: "#03070b"
             radius: 20
             border.color: "#163348"
+            clip: true
 
-            VideoSurfaceItem {
-                id: videoSurface
-                objectName: "videoSurface"
+            Item {
+                id: videoSurfaceHost
+                objectName: "videoSurfaceHost"
                 anchors.fill: parent
+                clip: true
             }
 
             Loader {

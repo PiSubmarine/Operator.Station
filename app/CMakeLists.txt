@@ -176,7 +176,7 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/View/qml.qrc
         PiSubmarine/Operator/Station/View/qml/OverlayContainer.qml
         PiSubmarine/Operator/Station/View/qml/Main.qml
-        PiSubmarine/Operator/Station/View/qml/Main.Windows.qml
+        PiSubmarine/Operator/Station/View/qml/WindowsVideoSurface.qml
         PiSubmarine/Operator/Station/Video/GstreamerPipeline.cpp
         PiSubmarine/Operator/Station/Video/GstreamerPipeline.h)
 PiSubmarineInitTarget(${PISUBMARINE_MODULE_NAME}.AppCommon)
