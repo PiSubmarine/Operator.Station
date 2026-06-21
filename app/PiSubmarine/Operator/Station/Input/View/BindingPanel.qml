@@ -47,8 +47,6 @@ Rectangle {
                 y: 10
                 spacing: 8
 
-                Label { text: "Binding Table"; color: "#dbefff"; font.pixelSize: 18 }
-
                 RowLayout {
                     width: parent.width
                     spacing: 8
