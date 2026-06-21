@@ -314,8 +314,7 @@ int main(int argc, char* argv[])
     std::filesystem::path tlsCertPath;
     std::filesystem::path tlsKeyPath;
     QString tlsServerAuthorityOverride;
-    const bool requiresRemoteGrpc = !parser.isSet("fake-lease") || !parser.isSet("fake-video");
-    if (requiresRemoteGrpc)
+    if (!parser.isSet("fake-lease") || !parser.isSet("fake-video"))
     {
         grpcServer = parser.value("grpc-server");
         if (ParseEndpoint(grpcServer).has_value() == false)
