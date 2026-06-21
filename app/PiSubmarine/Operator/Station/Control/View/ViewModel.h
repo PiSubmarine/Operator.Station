@@ -2,7 +2,7 @@
 
 #include <QObject>
 
-namespace PiSubmarine::Operator::Station::Input::View
+namespace PiSubmarine::Operator::Station::Control::View
 {
     class ViewModel final : public QObject
     {

@@ -1,4 +1,4 @@
-#include "PiSubmarine/Operator/Station/Input/Controller.h"
+#include "PiSubmarine/Operator/Station/Control/Controller.h"
 
 #include <memory>
 
@@ -11,7 +11,7 @@
 #include "PiSubmarine/Control/Vertical/Api/Command.h"
 #include "PiSubmarine/SignedNormalizedFraction.h"
 
-namespace PiSubmarine::Operator::Station::Input
+namespace PiSubmarine::Operator::Station::Control
 {
     Controller::Controller(
         ::PiSubmarine::Control::Api::Input::ISink& sink,
@@ -19,7 +19,7 @@ namespace PiSubmarine::Operator::Station::Input
         QObject* parent)
         : QObject(parent)
         , m_Sink(sink)
-        , m_Logger(loggerFactory.CreateLogger("Operator.Station.Input.Controller"))
+        , m_Logger(loggerFactory.CreateLogger("Operator.Station.Control.Controller"))
     {
     }
 

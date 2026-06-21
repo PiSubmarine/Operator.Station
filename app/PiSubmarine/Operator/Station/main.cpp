@@ -1,11 +1,11 @@
-#include <array>
 #include <chrono>
+#include <cstdio>
 #include <exception>
+#include <filesystem>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <vector>
 
 #include <QCommandLineOption>
@@ -21,19 +21,22 @@
 
 #include <gst/gst.h>
 #include <spdlog/logger.h>
+#include <spdlog/spdlog.h>
 
 #include "PiSubmarine/Error/Api/Result.h"
+#include "PiSubmarine/Operator/Station/Composition/FakeControl.h"
+#include "PiSubmarine/Operator/Station/Composition/FakeLease.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeTelemetry.h"
+#include "PiSubmarine/Operator/Station/Composition/IControl.h"
+#include "PiSubmarine/Operator/Station/Composition/ILease.h"
 #include "PiSubmarine/Operator/Station/Composition/ITelemetry.h"
+#include "PiSubmarine/Operator/Station/Composition/RemoteControl.h"
+#include "PiSubmarine/Operator/Station/Composition/RemoteLease.h"
 #include "PiSubmarine/Operator/Station/Composition/RemoteTelemetry.h"
+#include "PiSubmarine/Operator/Station/Control/Controller.h"
+#include "PiSubmarine/Operator/Station/Control/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Logging/QtLog.h"
 #include "PiSubmarine/Operator/Station/Logging/SpdlogFactory.h"
-#include "PiSubmarine/Operator/Station/Input/Controller.h"
-#include "PiSubmarine/Operator/Station/Input/FakeSink.h"
-#include "PiSubmarine/Operator/Station/Input/View/ViewModel.h"
-#include "PiSubmarine/Operator/Station/Lease/FakeIssuer.h"
-#include "PiSubmarine/Operator/Station/Lease/SyncLeaseIssuerProxy.h"
-#include "PiSubmarine/Operator/Station/Lease/ThreadWorker.h"
 #include "PiSubmarine/Operator/Station/Telemetry/BallastController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/BatteryController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
@@ -83,6 +86,7 @@ namespace
             .Port = static_cast<std::uint16_t>(port)};
     }
 
+    constexpr std::size_t ControlReceiveQueueCapacity = 1;
     constexpr std::size_t TelemetryReceiveQueueCapacity = 16;
     constexpr std::size_t DefaultTelemetryMotorCount = 4;
 
@@ -211,13 +215,29 @@ int main(int argc, char* argv[])
 
     QCommandLineParser parser;
     parser.addHelpOption();
+    parser.addOption(QCommandLineOption("fake-control", "Use a local fake control sink."));
+    parser.addOption(QCommandLineOption("fake-lease", "Use a local fake lease issuer."));
     parser.addOption(QCommandLineOption("fake-telemetry", "Use local fake telemetry providers."));
     parser.addOption(QCommandLineOption("fake-video", "Use a local fake test-pattern video pipeline."));
+    parser.addOption(QCommandLineOption(
+        "grpc-server",
+        "Shared gRPC server endpoint host:port.",
+        "endpoint",
+        "127.0.0.1:50051"));
     parser.addOption(QCommandLineOption(
         "log-level",
         "Set application log level: trace, debug, info, warn, error, critical, off.",
         "level",
         "info"));
+    parser.addOption(QCommandLineOption("tls-ca", "PEM client certificate authority file.", "path"));
+    parser.addOption(QCommandLineOption("tls-cert", "PEM client certificate chain file.", "path"));
+    parser.addOption(QCommandLineOption("tls-key", "PEM client private key file.", "path"));
+    parser.addOption(QCommandLineOption("tls-server-authority", "Optional TLS server authority override.", "name", ""));
+    parser.addOption(QCommandLineOption(
+        "control-server",
+        "Control UDP server endpoint host:port.",
+        "endpoint",
+        "127.0.0.1:50052"));
     parser.addOption(QCommandLineOption(
         "tickrate",
         "Set controllers thread tick period. Supported units: ns, us, ms, s.",
@@ -231,15 +251,58 @@ int main(int argc, char* argv[])
     const auto logLevel = ParseLogLevel(parser.value("log-level"));
     if (!logLevel.has_value())
     {
-        qCritical("Invalid --log-level value. Use one of: trace, debug, info, warn, error, critical, off.");
+        std::fprintf(
+            stderr,
+            "Invalid --log-level value. Use one of: trace, debug, info, warn, error, critical, off.\n");
         return 1;
     }
+
+    PiSubmarine::Operator::Station::Logging::SpdlogFactory loggerFactory(*logLevel);
+    auto qtLogger = loggerFactory.CreateLogger("Qt");
+    PiSubmarine::Operator::Station::Logging::InstallQtMessageHandler(qtLogger);
+    const auto logger = loggerFactory.CreateLogger("Operator.Station.Main");
 
     const auto tickPeriod = ParseDuration(parser.value("tickrate"));
     if (!tickPeriod.has_value())
     {
-        qCritical("Invalid --tickrate value. Use a positive duration with units ns, us, ms, or s.");
+        SPDLOG_LOGGER_CRITICAL(logger, "Invalid --tickrate value. Use a positive duration with units ns, us, ms, or s.");
         return 1;
+    }
+
+    QString grpcServer;
+    std::filesystem::path tlsCaPath;
+    std::filesystem::path tlsCertPath;
+    std::filesystem::path tlsKeyPath;
+    QString tlsServerAuthorityOverride;
+    if (!parser.isSet("fake-lease"))
+    {
+        grpcServer = parser.value("grpc-server");
+        if (ParseEndpoint(grpcServer).has_value() == false)
+        {
+            SPDLOG_LOGGER_CRITICAL(logger, "Invalid --grpc-server value. Use host:port.");
+            return 1;
+        }
+
+        tlsCaPath = parser.value("tls-ca").toStdString();
+        tlsCertPath = parser.value("tls-cert").toStdString();
+        tlsKeyPath = parser.value("tls-key").toStdString();
+        tlsServerAuthorityOverride = parser.value("tls-server-authority");
+        if (tlsCaPath.empty() || tlsCertPath.empty() || tlsKeyPath.empty())
+        {
+            SPDLOG_LOGGER_CRITICAL(logger, "Remote lease requires --tls-ca, --tls-cert, and --tls-key.");
+            return 1;
+        }
+    }
+
+    std::optional<PiSubmarine::Udp::Api::Endpoint> controlServerEndpoint;
+    if (!parser.isSet("fake-control"))
+    {
+        controlServerEndpoint = ParseEndpoint(parser.value("control-server"));
+        if (!controlServerEndpoint.has_value())
+        {
+            SPDLOG_LOGGER_CRITICAL(logger, "Invalid --control-server value. Use host:port.");
+            return 1;
+        }
     }
 
     std::optional<PiSubmarine::Udp::Api::Endpoint> telemetryServerEndpoint;
@@ -248,17 +311,10 @@ int main(int argc, char* argv[])
         telemetryServerEndpoint = ParseEndpoint(parser.value("telemetry-server"));
         if (!telemetryServerEndpoint.has_value())
         {
-            qCritical("Invalid --telemetry-server value. Use host:port.");
+            SPDLOG_LOGGER_CRITICAL(logger, "Invalid --telemetry-server value. Use host:port.");
             return 1;
         }
     }
-
-    PiSubmarine::Operator::Station::Logging::SpdlogFactory loggerFactory(*logLevel);
-    auto qtLogger = loggerFactory.CreateLogger("Qt");
-    PiSubmarine::Operator::Station::Logging::InstallQtMessageHandler(qtLogger);
-
-
-    const auto logger = loggerFactory.CreateLogger("Operator.Station.Main");
     if (!logger || !PiSubmarine::Operator::Station::Video::GstreamerPipeline::EnsureGstreamerInitialized(logger))
     {
         return 1;
@@ -270,7 +326,7 @@ int main(int argc, char* argv[])
     videoViewModel.SetSubscriptionHost("127.0.0.1");
     videoViewModel.SetSubscriptionPort(static_cast<quint16>(parser.value("video-port").toUShort()));
 
-    PiSubmarine::Operator::Station::Input::View::ViewModel inputViewModel;
+    PiSubmarine::Operator::Station::Control::View::ViewModel controlViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Ballast::ViewModel ballastTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel lampTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Depth::ViewModel depthTelemetryViewModel;
@@ -298,7 +354,7 @@ int main(int argc, char* argv[])
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("videoViewModel", &videoViewModel);
     engine.rootContext()->setContextProperty("ballastTelemetryViewModel", &ballastTelemetryViewModel);
-    engine.rootContext()->setContextProperty("inputViewModel", &inputViewModel);
+    engine.rootContext()->setContextProperty("controlViewModel", &controlViewModel);
     engine.rootContext()->setContextProperty("depthTelemetryViewModel", &depthTelemetryViewModel);
     engine.rootContext()->setContextProperty("lampTelemetryViewModel", &lampTelemetryViewModel);
     engine.rootContext()->setContextProperty("motorTelemetryViewModels", motorTelemetryViewModelList);
@@ -321,30 +377,69 @@ int main(int argc, char* argv[])
     engine.load(mainWindowUrl);
     if (engine.rootObjects().isEmpty())
     {
-        // TODO replace all logger->* with SPDLOG logging macro.
-        logger->error("Failed to load main QML window");
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to load main QML window");
         return 1;
     }
 
     auto* videoItem = engine.rootObjects().front()->findChild<QQuickItem*>("videoSurface");
     if (videoItem == nullptr)
     {
-        logger->error("Failed to locate QML video surface item");
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to locate QML video surface item");
         return 1;
     }
 
     QThread controllerThread;
     QThread leaseThread;
 
-    PiSubmarine::Operator::Station::Lease::FakeIssuer blockingLeaseIssuer;
-    auto* leaseWorker = new PiSubmarine::Operator::Station::Lease::ThreadWorker(blockingLeaseIssuer, loggerFactory);
-    leaseWorker->moveToThread(&leaseThread);
-    QObject::connect(&leaseThread, &QThread::finished, leaseWorker, &QObject::deleteLater);
+    std::unique_ptr<PiSubmarine::Operator::Station::Composition::ILease> lease;
+    try
+    {
+        if (parser.isSet("fake-lease"))
+        {
+            lease = std::make_unique<PiSubmarine::Operator::Station::Composition::FakeLease>(loggerFactory);
+        }
+        else
+        {
+            lease = std::make_unique<PiSubmarine::Operator::Station::Composition::RemoteLease>(
+                loggerFactory,
+                PiSubmarine::Operator::Station::Composition::RemoteLeaseConfig{
+                    .GrpcTarget = grpcServer.toStdString(),
+                    .CertificateAuthorityPath = tlsCaPath,
+                    .ClientCertificateChainPath = tlsCertPath,
+                    .ClientPrivateKeyPath = tlsKeyPath,
+                    .ServerAuthorityOverride = tlsServerAuthorityOverride.toStdString()});
+        }
+    }
+    catch (const std::exception& exception)
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to initialize lease composition: {}", exception.what());
+        return 1;
+    }
+    lease->GetWorkerObject().moveToThread(&leaseThread);
 
-    PiSubmarine::Operator::Station::Lease::SyncLeaseIssuerProxy leaseProxy(*leaseWorker);
     LocalVideoSubscriptionService videoSubscriptionService;
-    PiSubmarine::Operator::Station::Input::FakeSink fakeInputSink;
     PiSubmarine::Operator::Station::Video::View::QmlVideoSinkTailFactory videoTailFactory(*videoItem, logger);
+
+    std::unique_ptr<PiSubmarine::Operator::Station::Composition::IControl> control;
+    try
+    {
+        if (parser.isSet("fake-control"))
+        {
+            control = std::make_unique<PiSubmarine::Operator::Station::Composition::FakeControl>();
+        }
+        else
+        {
+            control = std::make_unique<PiSubmarine::Operator::Station::Composition::RemoteControl>(
+                lease->GetIssuer(),
+                *controlServerEndpoint,
+                ControlReceiveQueueCapacity);
+        }
+    }
+    catch (const std::exception& exception)
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to initialize control composition: {}", exception.what());
+        return 1;
+    }
 
     std::unique_ptr<PiSubmarine::Operator::Station::Composition::ITelemetry> telemetry;
     try
@@ -357,14 +452,14 @@ int main(int argc, char* argv[])
         else
         {
             telemetry = std::make_unique<PiSubmarine::Operator::Station::Composition::RemoteTelemetry>(
-                leaseProxy,
+                lease->GetIssuer(),
                 *telemetryServerEndpoint,
                 TelemetryReceiveQueueCapacity);
         }
     }
     catch (const std::exception& exception)
     {
-        logger->error("Failed to initialize telemetry composition: {}", exception.what());
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to initialize telemetry composition: {}", exception.what());
         return 1;
     }
 
@@ -384,7 +479,7 @@ int main(int argc, char* argv[])
     auto videoController = std::make_unique<PiSubmarine::Operator::Station::Video::Controller>(
         videoConfig,
         loggerFactory,
-        leaseProxy,
+        lease->GetIssuer(),
         videoSubscriptionService,
         videoPipelineBuilder);
     auto ballastTelemetryController =
@@ -416,8 +511,8 @@ int main(int argc, char* argv[])
         *proximityTelemetryController,
         *videoStatusTelemetryController,
         loggerFactory);
-    auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
-        fakeInputSink,
+    auto controlController = std::make_unique<PiSubmarine::Operator::Station::Control::Controller>(
+        control->GetSink(),
         loggerFactory);
     auto controllerTickRunner = std::make_unique<PiSubmarine::Operator::Station::Time::TickRunner>(
         *tickPeriod,
@@ -425,21 +520,30 @@ int main(int argc, char* argv[])
 
     if (!controllerTickRunner->AddTickable(*videoController).has_value())
     {
-        logger->error("Failed to add video controller to controllers tick runner");
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add video controller to controllers tick runner");
         return 1;
+    }
+
+    for (auto& controlTickable : control->GetTickables())
+    {
+        if (!controllerTickRunner->AddTickable(controlTickable.get()).has_value())
+        {
+            SPDLOG_LOGGER_CRITICAL(logger, "Failed to add control tickable to controllers tick runner");
+            return 1;
+        }
     }
 
     for (auto& telemetryTickable : telemetry->GetTickables())
     {
         if (!controllerTickRunner->AddTickable(telemetryTickable.get()).has_value())
         {
-            logger->error("Failed to add telemetry tickable to controllers tick runner");
+            SPDLOG_LOGGER_CRITICAL(logger, "Failed to add telemetry tickable to controllers tick runner");
             return 1;
         }
     }
     if (!controllerTickRunner->AddTickable(*telemetryController).has_value())
     {
-        logger->error("Failed to add telemetry controller to controllers tick runner");
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add telemetry controller to controllers tick runner");
         return 1;
     }
 
@@ -501,10 +605,10 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Telemetry::View::Video::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
     QObject::connect(
-        &inputViewModel,
-        &PiSubmarine::Operator::Station::Input::View::ViewModel::IntentUpdated,
-        inputController.get(),
-        &PiSubmarine::Operator::Station::Input::Controller::SubmitIntent,
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::IntentUpdated,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SubmitIntent,
         Qt::QueuedConnection);
 
     videoController->moveToThread(&controllerThread);
@@ -519,7 +623,7 @@ int main(int argc, char* argv[])
     videoStatusTelemetryController->moveToThread(&controllerThread);
     batteryTelemetryController->moveToThread(&controllerThread);
     telemetryController->moveToThread(&controllerThread);
-    inputController->moveToThread(&controllerThread);
+    controlController->moveToThread(&controllerThread);
     controllerTickRunner->moveToThread(&controllerThread);
 
     QObject::connect(
@@ -565,11 +669,13 @@ int main(int argc, char* argv[])
         DeleteLaterOnObjectThread(videoStatusTelemetryController);
         DeleteLaterOnObjectThread(batteryTelemetryController);
         DeleteLaterOnObjectThread(telemetryController);
-        DeleteLaterOnObjectThread(inputController);
+        DeleteLaterOnObjectThread(controlController);
         DeleteLaterOnObjectThread(controllerTickRunner);
 
         controllerThread.quit();
         controllerThread.wait();
+
+        control.reset();
 
         // Telemetry owns the UDP client that releases its lease in the destructor.
         // Destroy it before the lease worker shuts down so the release request can still be processed.
@@ -577,6 +683,7 @@ int main(int argc, char* argv[])
 
         leaseThread.quit();
         leaseThread.wait();
+        lease.reset();
     });
 
     return application.exec();

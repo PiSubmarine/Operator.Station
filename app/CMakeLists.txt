@@ -27,18 +27,22 @@ PiSubmarineAddDependency("https://github.com/PiSubmarine/Battery.Telemetry.Proto
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Ballast.Telemetry.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Ballast.Telemetry.Protobuf.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Control.Api.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Control.Client.Udp.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Control.Horizontal.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Control.Lamp.Api.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Control.Serialization.Protobuf.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Control.Vertical.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Control.Video.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Error.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Exceptions.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Grpc.Client.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Gstreamer.Build.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Depth.Telemetry.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Depth.Telemetry.Protobuf.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Lamp.Telemetry.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Lamp.Telemetry.Protobuf.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Lease.Api.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Lease.Client.Grpc.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Logging.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Motor.Telemetry.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Motor.Telemetry.Protobuf.git" "")
@@ -58,22 +62,32 @@ PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Telemetry.Protobu
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Subscription.Api.git" "")
 
 add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
+        PiSubmarine/Operator/Station/Composition/FakeControl.cpp
+        PiSubmarine/Operator/Station/Composition/FakeControl.h
+        PiSubmarine/Operator/Station/Composition/FakeLease.cpp
+        PiSubmarine/Operator/Station/Composition/FakeLease.h
         PiSubmarine/Operator/Station/Composition/FakeTelemetry.cpp
         PiSubmarine/Operator/Station/Composition/FakeTelemetry.h
+        PiSubmarine/Operator/Station/Composition/IControl.h
+        PiSubmarine/Operator/Station/Composition/ILease.h
         PiSubmarine/Operator/Station/Composition/ITelemetry.h
+        PiSubmarine/Operator/Station/Composition/RemoteLease.cpp
+        PiSubmarine/Operator/Station/Composition/RemoteLease.h
+        PiSubmarine/Operator/Station/Composition/RemoteControl.cpp
+        PiSubmarine/Operator/Station/Composition/RemoteControl.h
         PiSubmarine/Operator/Station/Composition/RemoteTelemetry.cpp
         PiSubmarine/Operator/Station/Composition/RemoteTelemetry.h
+        PiSubmarine/Operator/Station/Control/Controller.cpp
+        PiSubmarine/Operator/Station/Control/Controller.h
+        PiSubmarine/Operator/Station/Control/FakeSink.cpp
+        PiSubmarine/Operator/Station/Control/FakeSink.h
+        PiSubmarine/Operator/Station/Control/View/ControlPanel.qml
+        PiSubmarine/Operator/Station/Control/View/ViewModel.cpp
+        PiSubmarine/Operator/Station/Control/View/ViewModel.h
         PiSubmarine/Operator/Station/Logging/QtLog.cpp
         PiSubmarine/Operator/Station/Logging/QtLog.h
         PiSubmarine/Operator/Station/Logging/SpdlogFactory.cpp
         PiSubmarine/Operator/Station/Logging/SpdlogFactory.h
-        PiSubmarine/Operator/Station/Input/Controller.cpp
-        PiSubmarine/Operator/Station/Input/Controller.h
-        PiSubmarine/Operator/Station/Input/FakeSink.cpp
-        PiSubmarine/Operator/Station/Input/FakeSink.h
-        PiSubmarine/Operator/Station/Input/View/ControlPanel.qml
-        PiSubmarine/Operator/Station/Input/View/ViewModel.cpp
-        PiSubmarine/Operator/Station/Input/View/ViewModel.h
         PiSubmarine/Operator/Station/Lease/FakeIssuer.cpp
         PiSubmarine/Operator/Station/Lease/FakeIssuer.h
         PiSubmarine/Operator/Station/Lease/IAsyncLeaseIssuer.h
@@ -160,18 +174,22 @@ target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Ba
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Battery.Telemetry.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Battery.Telemetry.Protobuf)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Control.Api)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Control.Client.Udp)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Control.Horizontal.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Control.Lamp.Api)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Control.Serialization.Protobuf)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Control.Vertical.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Control.Video.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Depth.Telemetry.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Depth.Telemetry.Protobuf)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Error.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Exceptions)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Grpc.Client)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Gstreamer.Build)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Lamp.Telemetry.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Lamp.Telemetry.Protobuf)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Lease.Api)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Lease.Client.Grpc)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Logging.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Motor.Telemetry.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Motor.Telemetry.Protobuf)

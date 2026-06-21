@@ -90,7 +90,7 @@ ApplicationWindow {
 
                 Loader {
                     Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Input/View/ControlPanel.qml"
+                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/ControlPanel.qml"
                 }
             }
         }

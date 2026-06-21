@@ -6,22 +6,22 @@
 - [x] Lease calls already run on a dedicated worker thread via `Lease::ThreadWorker` and `Lease::SyncLeaseIssuerProxy`.
 - [x] Video transport configuration already exists partially as `--video-bind-address <address>` and `--video-port <port>`.
 - [x] Video can already use a real RTP receive pipeline when `--fake-video` is not set.
-- [ ] Lease and control are still wired to fake/local implementations in `main.cpp`.
+- [ ] Video subscription is still wired to a fake/local implementation in `main.cpp`.
 - [ ] Video subscription is still wired to the local `LocalVideoSubscriptionService` stub in `main.cpp`.
 
 ## CLI and configuration
 
 - [ ] Replace the current split video CLI with the target transport-oriented options:
   `--grpc-server <host:port>`, `--telemetry-server <host:port>`, `--control-server <host:port>`, `--video-bind <host:port>`.
-- [ ] Add `--tickrate <duration>` CLI option for the controllers-thread tick period, with default `10ms`.
-- [ ] Keep fake toggles for composition-root testing:
+- [x] Add `--tickrate <duration>` CLI option for the controllers-thread tick period, with default `10ms`.
+- [x] Keep fake toggles for composition-root testing:
   `--fake-lease`, `--fake-telemetry`, `--fake-control`, `--fake-video`.
 - [ ] Parse `host:port` values into explicit endpoint types instead of passing raw strings through `main.cpp`.
 - [x] Reuse `--grpc-server` for all gRPC services.
 
 ## Dependencies and composition root
 
-- [ ] Add missing PiSubmarine dependencies to `app/CMakeLists.txt`:
+- [x] Add missing PiSubmarine dependencies to `app/CMakeLists.txt`:
   `Lease.Client.Grpc`, `Grpc.Client`, `Telemetry.Client.Udp`, `Control.Client.Udp`,
   `Battery.Telemetry.Protobuf`, `Lamp.Telemetry.Protobuf`, `Motor.Telemetry.Protobuf`,
   `Depth.Telemetry.Protobuf`, `Ballast.Telemetry.Protobuf`, `Proximity.Telemetry.Protobuf`,
@@ -34,9 +34,9 @@
 
 ## Lease transport
 
-- [ ] Create a real gRPC channel using `PiSubmarine.Grpc.Client`.
-- [ ] Replace `Lease::FakeIssuer` with `Lease::Client::Grpc::Client` when `--fake-lease` is not set.
-- [ ] Keep the existing `Lease::ThreadWorker` + `Lease::SyncLeaseIssuerProxy` boundary so blocking transport work stays off the UI thread.
+- [x] Create a real gRPC channel using `PiSubmarine.Grpc.Client`.
+- [x] Replace `Lease::FakeIssuer` with `Lease::Client::Grpc::Client` when `--fake-lease` is not set.
+- [x] Keep the existing `Lease::ThreadWorker` + `Lease::SyncLeaseIssuerProxy` boundary so blocking transport work stays off the UI thread.
 
 ## Video transport
 
@@ -47,11 +47,11 @@
 
 ## Control transport
 
-- [ ] Replace `Input::FakeSink` with `Control.Client.Udp::Client` when `--fake-control` is not set.
-- [ ] Add the required serializer, nonce provider, AEAD provider, and UDP sender in the composition root.
-- [ ] Remove lease management from `Input::Controller`; `Control.Client.Udp::Client` must remain the only control lease owner.
+- [x] Replace `Control::FakeSink` with `Control.Client.Udp::Client` when `--fake-control` is not set.
+- [x] Add the required serializer, nonce provider, AEAD provider, and UDP sender in the composition root.
+- [x] Remove lease management from `Control::Controller`; `Control.Client.Udp::Client` must remain the only control lease owner.
 - [ ] Adjust `Control.Client.Udp::Client` to treat `ErrorCondition::NotReady` as in-progress lease work, matching `Telemetry.Client.Udp`.
-- [ ] Make sure `Input::Controller` keeps reporting submit failures clearly when the UDP client is temporarily unavailable.
+- [ ] Make sure `Control::Controller` keeps reporting submit failures clearly when the UDP client is temporarily unavailable.
 
 ## Telemetry transport
 

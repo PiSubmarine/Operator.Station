@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <QObject>
 
 #include "PiSubmarine/Control/Api/Input/ISink.h"
@@ -10,7 +12,7 @@ namespace spdlog
     class logger;
 }
 
-namespace PiSubmarine::Operator::Station::Input
+namespace PiSubmarine::Operator::Station::Control
 {
     class Controller final : public QObject
     {
@@ -18,7 +20,7 @@ namespace PiSubmarine::Operator::Station::Input
 
     public:
         Controller(
-            Control::Api::Input::ISink& sink,
+            ::PiSubmarine::Control::Api::Input::ISink& sink,
             PiSubmarine::Logging::Api::IFactory& loggerFactory,
             QObject* parent = nullptr);
 

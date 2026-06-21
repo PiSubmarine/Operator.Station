@@ -1,6 +1,6 @@
-#include "PiSubmarine/Operator/Station/Input/View/ViewModel.h"
+#include "PiSubmarine/Operator/Station/Control/View/ViewModel.h"
 
-namespace PiSubmarine::Operator::Station::Input::View
+namespace PiSubmarine::Operator::Station::Control::View
 {
     namespace
     {

@@ -1,6 +1,6 @@
-#include "PiSubmarine/Operator/Station/Input/FakeSink.h"
+#include "PiSubmarine/Operator/Station/Control/FakeSink.h"
 
-namespace PiSubmarine::Operator::Station::Input
+namespace PiSubmarine::Operator::Station::Control
 {
     Error::Api::Result<void> FakeSink::Submit(const ::PiSubmarine::Control::Api::Input::OperatorCommand& command)
     {

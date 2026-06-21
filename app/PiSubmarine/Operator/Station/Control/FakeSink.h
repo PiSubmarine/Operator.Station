@@ -5,7 +5,7 @@
 
 #include "PiSubmarine/Control/Api/Input/ISink.h"
 
-namespace PiSubmarine::Operator::Station::Input
+namespace PiSubmarine::Operator::Station::Control
 {
     class FakeSink final : public ::PiSubmarine::Control::Api::Input::ISink
     {
