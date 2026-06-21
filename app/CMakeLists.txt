@@ -60,6 +60,7 @@ PiSubmarineAddDependency("https://github.com/PiSubmarine/Units.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Telemetry.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Telemetry.Protobuf.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Subscription.Api.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Video.Subscription.Grpc.Client.git" "")
 
 add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Composition/FakeControl.cpp
@@ -68,15 +69,20 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Composition/FakeLease.h
         PiSubmarine/Operator/Station/Composition/FakeTelemetry.cpp
         PiSubmarine/Operator/Station/Composition/FakeTelemetry.h
+        PiSubmarine/Operator/Station/Composition/FakeVideo.cpp
+        PiSubmarine/Operator/Station/Composition/FakeVideo.h
         PiSubmarine/Operator/Station/Composition/IControl.h
         PiSubmarine/Operator/Station/Composition/ILease.h
         PiSubmarine/Operator/Station/Composition/ITelemetry.h
+        PiSubmarine/Operator/Station/Composition/IVideo.h
         PiSubmarine/Operator/Station/Composition/RemoteLease.cpp
         PiSubmarine/Operator/Station/Composition/RemoteLease.h
         PiSubmarine/Operator/Station/Composition/RemoteControl.cpp
         PiSubmarine/Operator/Station/Composition/RemoteControl.h
         PiSubmarine/Operator/Station/Composition/RemoteTelemetry.cpp
         PiSubmarine/Operator/Station/Composition/RemoteTelemetry.h
+        PiSubmarine/Operator/Station/Composition/RemoteVideo.cpp
+        PiSubmarine/Operator/Station/Composition/RemoteVideo.h
         PiSubmarine/Operator/Station/Control/Controller.cpp
         PiSubmarine/Operator/Station/Control/Controller.h
         PiSubmarine/Operator/Station/Control/FakeSink.cpp
@@ -207,6 +213,7 @@ target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Un
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Video.Telemetry.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Video.Telemetry.Protobuf)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Video.Subscription.Api)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Video.Subscription.Grpc.Client)
 
 foreach(_gstreamer_plugin IN ITEMS
         app

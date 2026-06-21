@@ -4,14 +4,14 @@
 
 - [x] Video already runs on a dedicated controllers thread in `main.cpp`.
 - [x] Lease calls already run on a dedicated worker thread via `Lease::ThreadWorker` and `Lease::SyncLeaseIssuerProxy`.
-- [x] Video transport configuration already exists partially as `--video-bind-address <address>` and `--video-port <port>`.
+- [x] Video transport configuration uses `--video-bind <host:port>`.
 - [x] Video can already use a real RTP receive pipeline when `--fake-video` is not set.
-- [ ] Video subscription is still wired to a fake/local implementation in `main.cpp`.
-- [ ] Video subscription is still wired to the local `LocalVideoSubscriptionService` stub in `main.cpp`.
+- [x] Video subscription is selected in the composition root instead of being wired directly in `main.cpp`.
+- [x] Replace the local `LocalVideoSubscriptionService` stub in `main.cpp`.
 
 ## CLI and configuration
 
-- [ ] Replace the current split video CLI with the target transport-oriented options:
+- [x] Replace the current split video CLI with the target transport-oriented options:
   `--grpc-server <host:port>`, `--telemetry-server <host:port>`, `--control-server <host:port>`, `--video-bind <host:port>`.
 - [x] Add `--tickrate <duration>` CLI option for the controllers-thread tick period, with default `10ms`.
 - [x] Keep fake toggles for composition-root testing:
@@ -30,7 +30,7 @@
   `Telemetry.Client.Udp`, `Battery.Telemetry.Protobuf`,
   `Motor.Telemetry.Protobuf`, `Security.Aead.Openssl`, `Security.Nonce.Openssl`, `Udp.Asio`.
 - [ ] Add any required transport/security dependencies pulled in by the real clients if they are not already reachable through transitive links.
-- [ ] Replace fake/local objects in `main.cpp` with real composition-root wiring behind CLI switches.
+- [x] Replace fake/local objects in `main.cpp` with real composition-root wiring behind CLI switches.
 
 ## Lease transport
 
@@ -40,10 +40,10 @@
 
 ## Video transport
 
-- [ ] Replace `LocalVideoSubscriptionService` with `Video.Subscription.Grpc.Client::Client`.
-- [ ] Feed the gRPC video subscription client from the real `--grpc-server` endpoint.
-- [ ] Keep the existing RTP pipeline builder path for actual media reception.
-- [ ] Rename the existing video bind CLI to the final `--video-bind <host:port>` shape.
+- [x] Replace `LocalVideoSubscriptionService` with `Video.Subscription.Grpc.Client::Client`.
+- [x] Feed the gRPC video subscription client from the real `--grpc-server` endpoint.
+- [x] Keep the existing RTP pipeline builder path for actual media reception.
+- [x] Rename the existing video bind CLI to the final `--video-bind <host:port>` shape.
 
 ## Control transport
 

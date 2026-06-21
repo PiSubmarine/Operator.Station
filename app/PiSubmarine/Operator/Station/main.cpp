@@ -27,12 +27,15 @@
 #include "PiSubmarine/Operator/Station/Composition/FakeControl.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeLease.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeTelemetry.h"
+#include "PiSubmarine/Operator/Station/Composition/FakeVideo.h"
 #include "PiSubmarine/Operator/Station/Composition/IControl.h"
 #include "PiSubmarine/Operator/Station/Composition/ILease.h"
 #include "PiSubmarine/Operator/Station/Composition/ITelemetry.h"
+#include "PiSubmarine/Operator/Station/Composition/IVideo.h"
 #include "PiSubmarine/Operator/Station/Composition/RemoteControl.h"
 #include "PiSubmarine/Operator/Station/Composition/RemoteLease.h"
 #include "PiSubmarine/Operator/Station/Composition/RemoteTelemetry.h"
+#include "PiSubmarine/Operator/Station/Composition/RemoteVideo.h"
 #include "PiSubmarine/Operator/Station/Control/Controller.h"
 #include "PiSubmarine/Operator/Station/Control/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Logging/QtLog.h"
@@ -54,14 +57,11 @@
 #include "PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/Controller.h"
-#include "PiSubmarine/Operator/Station/Video/FakePipelineBuilder.h"
 #include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
-#include "PiSubmarine/Operator/Station/Video/RtpPipelineBuilder.h"
 #include "PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.h"
 #include "PiSubmarine/Operator/Station/Video/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.h"
 #include "PiSubmarine/Udp/Api/Endpoint.h"
-#include "PiSubmarine/Video/Subscription/Api/IService.h"
 
 namespace
 {
@@ -164,28 +164,6 @@ namespace
         return std::nullopt;
     }
 
-    class LocalVideoSubscriptionService final : public ::PiSubmarine::Video::Subscription::Api::IService
-    {
-    public:
-        [[nodiscard]] ::PiSubmarine::Error::Api::Result<void> Subscribe(
-            const ::PiSubmarine::Video::Subscription::Api::SubscribeRequest& request) override
-        {
-            m_LastRequest = request;
-            return {};
-        }
-
-        [[nodiscard]] ::PiSubmarine::Error::Api::Result<void> Unsubscribe(
-            const ::PiSubmarine::Video::Subscription::Api::UnsubscribeRequest& request) override
-        {
-            m_LastLeaseId = request.LeaseId;
-            return {};
-        }
-
-    private:
-        ::PiSubmarine::Video::Subscription::Api::SubscribeRequest m_LastRequest{};
-        ::PiSubmarine::Lease::Api::LeaseId m_LastLeaseId{};
-    };
-
     template <typename TObject>
     void DeleteLaterOnObjectThread(std::unique_ptr<TObject>& object)
     {
@@ -243,8 +221,7 @@ int main(int argc, char* argv[])
         "Set controllers thread tick period. Supported units: ns, us, ms, s.",
         "duration",
         "10ms"));
-    parser.addOption(QCommandLineOption("video-bind-address", "Local RTP bind address.", "address", "0.0.0.0"));
-    parser.addOption(QCommandLineOption("video-port", "Local RTP bind port.", "port", "5004"));
+    parser.addOption(QCommandLineOption("video-bind", "Local RTP bind endpoint host:port.", "endpoint", "0.0.0.0:5004"));
     parser.addOption(QCommandLineOption("telemetry-server", "Telemetry UDP server endpoint host:port.", "endpoint", "127.0.0.1:6100"));
     parser.process(application);
 
@@ -274,7 +251,8 @@ int main(int argc, char* argv[])
     std::filesystem::path tlsCertPath;
     std::filesystem::path tlsKeyPath;
     QString tlsServerAuthorityOverride;
-    if (!parser.isSet("fake-lease"))
+    const bool requiresRemoteGrpc = !parser.isSet("fake-lease") || !parser.isSet("fake-video");
+    if (requiresRemoteGrpc)
     {
         grpcServer = parser.value("grpc-server");
         if (ParseEndpoint(grpcServer).has_value() == false)
@@ -289,7 +267,9 @@ int main(int argc, char* argv[])
         tlsServerAuthorityOverride = parser.value("tls-server-authority");
         if (tlsCaPath.empty() || tlsCertPath.empty() || tlsKeyPath.empty())
         {
-            SPDLOG_LOGGER_CRITICAL(logger, "Remote lease requires --tls-ca, --tls-cert, and --tls-key.");
+            SPDLOG_LOGGER_CRITICAL(
+                logger,
+                "Remote gRPC clients require --tls-ca, --tls-cert, and --tls-key.");
             return 1;
         }
     }
@@ -315,16 +295,24 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+
+    const auto videoBindEndpoint = ParseEndpoint(parser.value("video-bind"));
+    if (!videoBindEndpoint.has_value())
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Invalid --video-bind value. Use host:port.");
+        return 1;
+    }
+
     if (!logger || !PiSubmarine::Operator::Station::Video::GstreamerPipeline::EnsureGstreamerInitialized(logger))
     {
         return 1;
     }
 
     PiSubmarine::Operator::Station::Video::View::ViewModel videoViewModel;
-    videoViewModel.SetReceiveBindAddress(parser.value("video-bind-address"));
-    videoViewModel.SetReceivePort(static_cast<quint16>(parser.value("video-port").toUShort()));
+    videoViewModel.SetReceiveBindAddress(QString::fromStdString(videoBindEndpoint->Address));
+    videoViewModel.SetReceivePort(videoBindEndpoint->Port);
     videoViewModel.SetSubscriptionHost("127.0.0.1");
-    videoViewModel.SetSubscriptionPort(static_cast<quint16>(parser.value("video-port").toUShort()));
+    videoViewModel.SetSubscriptionPort(videoBindEndpoint->Port);
 
     PiSubmarine::Operator::Station::Control::View::ViewModel controlViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Ballast::ViewModel ballastTelemetryViewModel;
@@ -417,8 +405,35 @@ int main(int argc, char* argv[])
     }
     lease->GetWorkerObject().moveToThread(&leaseThread);
 
-    LocalVideoSubscriptionService videoSubscriptionService;
     PiSubmarine::Operator::Station::Video::View::QmlVideoSinkTailFactory videoTailFactory(*videoItem, logger);
+
+    std::unique_ptr<PiSubmarine::Operator::Station::Composition::IVideo> video;
+    try
+    {
+        if (parser.isSet("fake-video"))
+        {
+            video = std::make_unique<PiSubmarine::Operator::Station::Composition::FakeVideo>(
+                loggerFactory,
+                videoTailFactory);
+        }
+        else
+        {
+            video = std::make_unique<PiSubmarine::Operator::Station::Composition::RemoteVideo>(
+                loggerFactory,
+                videoTailFactory,
+                PiSubmarine::Operator::Station::Composition::RemoteVideoConfig{
+                    .GrpcTarget = grpcServer.toStdString(),
+                    .CertificateAuthorityPath = tlsCaPath,
+                    .ClientCertificateChainPath = tlsCertPath,
+                    .ClientPrivateKeyPath = tlsKeyPath,
+                    .ServerAuthorityOverride = tlsServerAuthorityOverride.toStdString()});
+        }
+    }
+    catch (const std::exception& exception)
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to initialize video composition: {}", exception.what());
+        return 1;
+    }
 
     std::unique_ptr<PiSubmarine::Operator::Station::Composition::IControl> control;
     try
@@ -473,15 +488,12 @@ int main(int argc, char* argv[])
         .Host = videoViewModel.GetSubscriptionHost().toStdString(),
         .Port = videoViewModel.GetSubscriptionPort()};
 
-    const auto videoPipelineBuilder = parser.isSet("fake-video")
-        ? PiSubmarine::Operator::Station::Video::CreateFakePipelineBuilder(loggerFactory, videoTailFactory)
-        : PiSubmarine::Operator::Station::Video::CreateRtpPipelineBuilder(loggerFactory, videoTailFactory);
     auto videoController = std::make_unique<PiSubmarine::Operator::Station::Video::Controller>(
         videoConfig,
         loggerFactory,
         lease->GetIssuer(),
-        videoSubscriptionService,
-        videoPipelineBuilder);
+        video->GetSubscriptionService(),
+        video->GetPipelineBuilder());
     auto ballastTelemetryController =
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::BallastController>(telemetry->GetBallast());
     auto batteryTelemetryController =
@@ -675,6 +687,7 @@ int main(int argc, char* argv[])
         controllerThread.quit();
         controllerThread.wait();
 
+        video.reset();
         control.reset();
 
         // Telemetry owns the UDP client that releases its lease in the destructor.
