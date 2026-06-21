@@ -223,7 +223,7 @@ int main(int argc, char* argv[])
         "duration",
         "10ms"));
     parser.addOption(QCommandLineOption("video-bind", "Local RTP bind endpoint host:port.", "endpoint", "0.0.0.0:5005"));
-    parser.addOption(QCommandLineOption("telemetry-server", "Telemetry UDP server endpoint host:port.", "endpoint", "127.0.0.1:6100"));
+    parser.addOption(QCommandLineOption("telemetry-server", "Telemetry UDP server endpoint host:port.", "endpoint", "127.0.0.1:50053"));
     parser.process(application);
 
     const auto logLevel = ParseLogLevel(parser.value("log-level"));
