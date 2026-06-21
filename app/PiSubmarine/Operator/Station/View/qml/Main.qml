@@ -36,16 +36,50 @@ ApplicationWindow {
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.topMargin: 12
-                source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Time/TimePanel.qml"
+                sourceComponent: Row {
+                    spacing: 10
+
+                    Loader {
+                        source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Time/TimePanel.qml"
+                    }
+
+                    Loader {
+                        source: "qrc:/PiSubmarine/Operator/Station/Control/View/StatusPanel.qml"
+                    }
+                }
             }
 
             Loader {
+                z: 3
                 anchors.fill: parent
                 anchors.margins: 24
                 source: "qrc:/PiSubmarine/Operator/Station/View/OverlayContainer.qml"
 
                 onLoaded: {
                     item.overlayViewModels = videoOverlayViewModels
+                }
+            }
+
+            Rectangle {
+                z: 4
+                anchors.fill: parent
+                color: "#02070dcc"
+                visible: controlStatusViewModel.bindingDialogVisible
+
+                TapHandler {
+                    onTapped: controlStatusViewModel.CloseBindingDialog()
+                }
+
+                Loader {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width - 64, 640)
+                    source: "qrc:/PiSubmarine/Operator/Station/Input/View/BindingPanel.qml"
+                }
+
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton
+                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                    onTapped: function(eventPoint) { eventPoint.accepted = false }
                 }
             }
         }

@@ -27,10 +27,12 @@
 
 #include "PiSubmarine/Error/Api/Result.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeControl.h"
+#include "PiSubmarine/Operator/Station/Composition/FakeInput.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeLease.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeTelemetry.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeVideo.h"
 #include "PiSubmarine/Operator/Station/Composition/IControl.h"
+#include "PiSubmarine/Operator/Station/Composition/IInput.h"
 #include "PiSubmarine/Operator/Station/Composition/ILease.h"
 #include "PiSubmarine/Operator/Station/Composition/ITelemetry.h"
 #include "PiSubmarine/Operator/Station/Composition/IVideo.h"
@@ -39,7 +41,11 @@
 #include "PiSubmarine/Operator/Station/Composition/RemoteTelemetry.h"
 #include "PiSubmarine/Operator/Station/Composition/RemoteVideo.h"
 #include "PiSubmarine/Operator/Station/Control/Controller.h"
+#include "PiSubmarine/Operator/Station/Control/View/StatusViewModel.h"
 #include "PiSubmarine/Operator/Station/Control/View/ViewModel.h"
+#include "PiSubmarine/Operator/Station/Input/BindingDescriptor.h"
+#include "PiSubmarine/Operator/Station/Input/Controller.h"
+#include "PiSubmarine/Operator/Station/Input/View/BindingViewModel.h"
 #include "PiSubmarine/Operator/Station/Logging/QtLog.h"
 #include "PiSubmarine/Operator/Station/Logging/SpdlogFactory.h"
 #include "PiSubmarine/Operator/Station/Telemetry/BallastController.h"
@@ -94,6 +100,13 @@ namespace
     constexpr std::size_t ControlReceiveQueueCapacity = 1;
     constexpr std::size_t TelemetryReceiveQueueCapacity = 16;
     constexpr std::size_t DefaultTelemetryMotorCount = 4;
+    const std::vector<PiSubmarine::Operator::Station::Input::BindingDescriptor> DefaultInputBindings{
+        {.Name = "Surge", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
+        {.Name = "Yaw", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
+        {.Name = "Ballast", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
+        {.Name = "Lamp", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
+        {.Name = "Hold Position", .Type = PiSubmarine::Operator::Station::Input::BindingType::Key}
+    };
 
     [[nodiscard]] std::optional<spdlog::level::level_enum> ParseLogLevel(const QString& value)
     {
@@ -378,6 +391,8 @@ int main(int argc, char* argv[])
     videoViewModel.SetSubscriptionPort(videoBindEndpoint->Port);
 
     PiSubmarine::Operator::Station::Control::View::ViewModel controlViewModel;
+    PiSubmarine::Operator::Station::Control::View::StatusViewModel controlStatusViewModel;
+    PiSubmarine::Operator::Station::Input::View::BindingViewModel inputBindingViewModel(DefaultInputBindings);
     PiSubmarine::Operator::Station::Telemetry::View::Ballast::ViewModel ballastTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel lampTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Depth::ViewModel depthTelemetryViewModel;
@@ -412,7 +427,9 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty("videoViewModel", &videoViewModel);
     engine.rootContext()->setContextProperty("ballastTelemetryViewModel", &ballastTelemetryViewModel);
     engine.rootContext()->setContextProperty("controlViewModel", &controlViewModel);
+    engine.rootContext()->setContextProperty("controlStatusViewModel", &controlStatusViewModel);
     engine.rootContext()->setContextProperty("depthTelemetryViewModel", &depthTelemetryViewModel);
+    engine.rootContext()->setContextProperty("inputBindingViewModel", &inputBindingViewModel);
     engine.rootContext()->setContextProperty("lampTelemetryViewModel", &lampTelemetryViewModel);
     engine.rootContext()->setContextProperty("motorTelemetryViewModels", motorTelemetryViewModelList);
     engine.rootContext()->setContextProperty("proximityTelemetryViewModel", &proximityTelemetryViewModel);
@@ -522,6 +539,9 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    auto input = std::make_unique<PiSubmarine::Operator::Station::Composition::FakeInput>();
+    const auto inputBindingFilePath = std::filesystem::current_path() / "PiSubmarine.Operator.Station.InputBindings.txt";
+
     std::unique_ptr<PiSubmarine::Operator::Station::Composition::ITelemetry> telemetry;
     try
     {
@@ -597,6 +617,12 @@ int main(int argc, char* argv[])
     auto controlController = std::make_unique<PiSubmarine::Operator::Station::Control::Controller>(
         control->GetSink(),
         loggerFactory);
+    auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
+        input->GetManager(),
+        input->GetBinder(),
+        input->GetSerializer(),
+        inputBindingFilePath,
+        DefaultInputBindings);
     auto controllerTickRunner = std::make_unique<PiSubmarine::Operator::Station::Time::TickRunner>(
         *tickPeriod,
         loggerFactory);
@@ -624,12 +650,24 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+    for (auto& inputTickable : input->GetTickables())
+    {
+        if (!controllerTickRunner->AddTickable(inputTickable.get()).has_value())
+        {
+            SPDLOG_LOGGER_CRITICAL(logger, "Failed to add input tickable to controllers tick runner");
+            return 1;
+        }
+    }
     if (!controllerTickRunner->AddTickable(*telemetryController).has_value())
     {
         SPDLOG_LOGGER_CRITICAL(logger, "Failed to add telemetry controller to controllers tick runner");
         return 1;
     }
-
+    if (!controllerTickRunner->AddTickable(*controlController).has_value())
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add control controller to controllers tick runner");
+        return 1;
+    }
     QObject::connect(
         &videoViewModel,
         &PiSubmarine::Operator::Station::Video::View::ViewModel::ReceiveEndpointChanged,
@@ -694,6 +732,15 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Telemetry::View::Time::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
     QObject::connect(
+        timeTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::TimeController::SnapshotChanged,
+        &controlStatusViewModel,
+        [viewModel = &controlStatusViewModel](const bool hasLease, const QString&, const QString&)
+        {
+            viewModel->SetLeaseState(hasLease);
+        },
+        Qt::QueuedConnection);
+    QObject::connect(
         videoStatusTelemetryController.get(),
         &PiSubmarine::Operator::Station::Telemetry::VideoStatusController::SnapshotChanged,
         &videoTelemetryViewModel,
@@ -705,6 +752,79 @@ int main(int argc, char* argv[])
         controlController.get(),
         &PiSubmarine::Operator::Station::Control::Controller::SubmitIntent,
         Qt::QueuedConnection);
+    QObject::connect(
+        &inputBindingViewModel,
+        &PiSubmarine::Operator::Station::Input::View::BindingViewModel::RequestCapture,
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::Capture,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &inputBindingViewModel,
+        &PiSubmarine::Operator::Station::Input::View::BindingViewModel::RequestCancelCapture,
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::CancelCapture,
+        Qt::QueuedConnection);
+    QObject::connect(
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::BindingHintChanged,
+        &inputBindingViewModel,
+        &PiSubmarine::Operator::Station::Input::View::BindingViewModel::SetBindingHint,
+        Qt::QueuedConnection);
+    QObject::connect(
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::AllBindingsConfiguredChanged,
+        &controlStatusViewModel,
+        &PiSubmarine::Operator::Station::Control::View::StatusViewModel::SetAllBindingsConfigured,
+        Qt::QueuedConnection);
+    QObject::connect(
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::CaptureInProgressChanged,
+        &inputBindingViewModel,
+        &PiSubmarine::Operator::Station::Input::View::BindingViewModel::SetCaptureInProgress,
+        Qt::QueuedConnection);
+    QObject::connect(
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::StatusMessageChanged,
+        &inputBindingViewModel,
+        &PiSubmarine::Operator::Station::Input::View::BindingViewModel::SetStatusMessage,
+        Qt::QueuedConnection);
+    QObject::connect(
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::OnAxisBound,
+        controlController.get(),
+        [control = controlController.get()](const QString& name, ::PiSubmarine::Input::Api::IAxis* axis)
+        {
+            if (name == "Surge")
+            {
+                control->SetSurgeAxis(axis);
+                return;
+            }
+            if (name == "Yaw")
+            {
+                control->SetYawAxis(axis);
+                return;
+            }
+            if (name == "Ballast")
+            {
+                control->SetBallastAxis(axis);
+                return;
+            }
+            if (name == "Lamp")
+            {
+                control->SetLampAxis(axis);
+            }
+        });
+    QObject::connect(
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::OnKeyBound,
+        controlController.get(),
+        [control = controlController.get()](const QString& name, ::PiSubmarine::Input::Api::IKey* key)
+        {
+            if (name == "Hold Position")
+            {
+                control->SetHoldPositionKey(key);
+            }
+        });
 
     videoController->moveToThread(&controllerThread);
     ballastTelemetryController->moveToThread(&controllerThread);
@@ -720,6 +840,7 @@ int main(int argc, char* argv[])
     batteryTelemetryController->moveToThread(&controllerThread);
     telemetryController->moveToThread(&controllerThread);
     controlController->moveToThread(&controllerThread);
+    inputController->moveToThread(&controllerThread);
     controllerTickRunner->moveToThread(&controllerThread);
 
     QObject::connect(
@@ -733,6 +854,12 @@ int main(int argc, char* argv[])
         &QThread::started,
         telemetryController.get(),
         &PiSubmarine::Operator::Station::Telemetry::Controller::Start,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controllerThread,
+        &QThread::started,
+        inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::Start,
         Qt::QueuedConnection);
     QObject::connect(
         &controllerThread,
@@ -767,6 +894,7 @@ int main(int argc, char* argv[])
         DeleteLaterOnObjectThread(batteryTelemetryController);
         DeleteLaterOnObjectThread(telemetryController);
         DeleteLaterOnObjectThread(controlController);
+        DeleteLaterOnObjectThread(inputController);
         DeleteLaterOnObjectThread(controllerTickRunner);
 
         controllerThread.quit();
@@ -774,6 +902,7 @@ int main(int argc, char* argv[])
 
         video.reset();
         control.reset();
+        input.reset();
 
         // Telemetry owns the UDP client that releases its lease in the destructor.
         // Destroy it before the lease worker shuts down so the release request can still be processed.
