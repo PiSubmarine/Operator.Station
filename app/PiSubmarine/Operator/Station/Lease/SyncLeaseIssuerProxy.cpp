@@ -74,12 +74,19 @@ namespace PiSubmarine::Operator::Station::Lease
         {
             m_PendingRenewRequests.erase(key);
             m_CachedLeasesById[key] = *readyResult;
+
+            if (m_AsyncLeaseIssuer.EnqueueRenewLease(leaseId))
+            {
+                m_PendingRenewRequests.emplace(key, leaseId);
+            }
+
             return *readyResult;
         }
 
         if (readyResult.error().Condition != Error::Api::ErrorCondition::NotReady)
         {
             m_PendingRenewRequests.erase(key);
+            InvalidateLeaseCacheLocked(leaseId);
             return std::unexpected(readyResult.error());
         }
 
@@ -117,18 +124,7 @@ namespace PiSubmarine::Operator::Station::Lease
         if (readyResult.has_value())
         {
             m_PendingReleaseRequests.erase(key);
-            m_CachedLeasesById.erase(key);
-
-            for (auto iterator = m_CachedGrantsByResource.begin(); iterator != m_CachedGrantsByResource.end();)
-            {
-                if (iterator->second.Lease.Id == leaseId)
-                {
-                    iterator = m_CachedGrantsByResource.erase(iterator);
-                    continue;
-                }
-
-                ++iterator;
-            }
+            InvalidateLeaseCacheLocked(leaseId);
 
             return {};
         }
@@ -144,17 +140,7 @@ namespace PiSubmarine::Operator::Station::Lease
             return std::unexpected(MakeNotReadyError());
         }
 
-        m_CachedLeasesById.erase(key);
-        for (auto iterator = m_CachedGrantsByResource.begin(); iterator != m_CachedGrantsByResource.end();)
-        {
-            if (iterator->second.Lease.Id == leaseId)
-            {
-                iterator = m_CachedGrantsByResource.erase(iterator);
-                continue;
-            }
-
-            ++iterator;
-        }
+        InvalidateLeaseCacheLocked(leaseId);
 
         if (m_AsyncLeaseIssuer.EnqueueReleaseLease(leaseId))
         {
@@ -172,5 +158,21 @@ namespace PiSubmarine::Operator::Station::Lease
     Error::Api::ErrorCondition SyncLeaseIssuerProxy::GetNotReadyCondition()
     {
         return Error::Api::ErrorCondition::NotReady;
+    }
+
+    void SyncLeaseIssuerProxy::InvalidateLeaseCacheLocked(const ::PiSubmarine::Lease::Api::LeaseId& leaseId)
+    {
+        m_CachedLeasesById.erase(leaseId.Value);
+
+        for (auto iterator = m_CachedGrantsByResource.begin(); iterator != m_CachedGrantsByResource.end();)
+        {
+            if (iterator->second.Lease.Id == leaseId)
+            {
+                iterator = m_CachedGrantsByResource.erase(iterator);
+                continue;
+            }
+
+            ++iterator;
+        }
     }
 }

@@ -23,6 +23,7 @@ namespace PiSubmarine::Operator::Station::Lease
     private:
         [[nodiscard]] static Error::Api::ErrorCondition GetNotReadyCondition();
         [[nodiscard]] static Error::Api::Error MakeNotReadyError();
+        void InvalidateLeaseCacheLocked(const ::PiSubmarine::Lease::Api::LeaseId& leaseId);
 
         IAsyncLeaseIssuer& m_AsyncLeaseIssuer;
         std::mutex m_Mutex;

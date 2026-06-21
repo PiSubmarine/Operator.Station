@@ -224,6 +224,7 @@ foreach(_gstreamer_plugin IN ITEMS
         videoparsersbad
         openh264
         rtp
+        rtpmanager
         udp)
     PiSubmarineGstreamerAddPlugin(${PISUBMARINE_MODULE_NAME}.AppCommon ${_gstreamer_plugin})
 endforeach()
