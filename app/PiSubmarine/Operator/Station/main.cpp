@@ -20,6 +20,7 @@
 #include <QVariant>
 
 #include <gst/gst.h>
+#include <PiSubmarine/Operator/Station/Telemetry/BallastController.h>
 #include <spdlog/logger.h>
 #include <spdlog/spdlog.h>
 
@@ -699,5 +700,5 @@ int main(int argc, char* argv[])
         lease.reset();
     });
 
-    return application.exec();
+    return QGuiApplication::exec();
 }
