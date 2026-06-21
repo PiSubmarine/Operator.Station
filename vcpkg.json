@@ -23,6 +23,8 @@
       "default-features": false
     },
     "spdlog",
-    "gtest"
+    "gtest",
+    "grpc",
+    "boost-asio"
   ]
 }

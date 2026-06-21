@@ -72,14 +72,99 @@ namespace PiSubmarine::Operator::Station::Telemetry
         private:
             mutable int m_Tick = 0;
         };
+
+        class FakeBallastProvider final : public ::PiSubmarine::Ballast::Telemetry::Api::IProvider
+        {
+        public:
+            [[nodiscard]] Error::Api::Result<::PiSubmarine::Ballast::Telemetry::Api::State> GetState() const override
+            {
+                ++m_Tick;
+                const auto cycle = static_cast<double>(m_Tick % 100) / 100.0;
+                return ::PiSubmarine::Ballast::Telemetry::Api::State{
+                    .Position = NormalizedFraction(cycle)};
+            }
+
+        private:
+            mutable int m_Tick = 0;
+        };
+
+        class FakeDepthProvider final : public ::PiSubmarine::Depth::Telemetry::Api::IProvider
+        {
+        public:
+            [[nodiscard]] Error::Api::Result<::PiSubmarine::Depth::Telemetry::Api::State> GetState() const override
+            {
+                ++m_Tick;
+                const auto cycle = static_cast<double>(m_Tick % 80) / 20.0;
+                return ::PiSubmarine::Depth::Telemetry::Api::State{
+                    .Depth = Meters{1.0 + cycle}};
+            }
+
+        private:
+            mutable int m_Tick = 0;
+        };
+
+        class FakeProximityProvider final : public ::PiSubmarine::Proximity::Telemetry::Api::IProvider
+        {
+        public:
+            [[nodiscard]] Error::Api::Result<::PiSubmarine::Proximity::Telemetry::Api::State> GetState() const override
+            {
+                ++m_Tick;
+                const auto cycle = static_cast<double>(m_Tick % 60) / 30.0;
+                return ::PiSubmarine::Proximity::Telemetry::Api::State{
+                    .Distance = Meters{0.5 + cycle}};
+            }
+
+        private:
+            mutable int m_Tick = 0;
+        };
+
+        class FakeVideoProvider final : public ::PiSubmarine::Video::Telemetry::Api::IProvider
+        {
+        public:
+            [[nodiscard]] Error::Api::Result<::PiSubmarine::Video::Telemetry::Api::Status> GetStatus() const override
+            {
+                ++m_Tick;
+                const auto phase = (m_Tick / 20) % 3;
+                if (phase == 0)
+                {
+                    return ::PiSubmarine::Video::Telemetry::Api::Status{
+                        .IsStreamingEnabled = false,
+                        .Subscribers = 0,
+                        .Operational = ::PiSubmarine::Video::Telemetry::Api::OperationalState::Stopped,
+                        .ActiveFaults = static_cast<::PiSubmarine::Video::Telemetry::Api::Faults>(0)};
+                }
+
+                if (phase == 1)
+                {
+                    return ::PiSubmarine::Video::Telemetry::Api::Status{
+                        .IsStreamingEnabled = true,
+                        .Subscribers = 1 + (m_Tick % 3),
+                        .Operational = ::PiSubmarine::Video::Telemetry::Api::OperationalState::Streaming,
+                        .ActiveFaults = static_cast<::PiSubmarine::Video::Telemetry::Api::Faults>(0)};
+                }
+
+                return ::PiSubmarine::Video::Telemetry::Api::Status{
+                    .IsStreamingEnabled = true,
+                    .Subscribers = 0,
+                    .Operational = ::PiSubmarine::Video::Telemetry::Api::OperationalState::Faulted,
+                    .ActiveFaults = ::PiSubmarine::Video::Telemetry::Api::Faults::NetworkError};
+            }
+
+        private:
+            mutable int m_Tick = 0;
+        };
     }
 
     FakeProviders CreateFakeProviders(const std::size_t motorCount)
     {
         FakeProviders providers;
+        providers.Ballast = std::make_unique<FakeBallastProvider>();
         providers.Lamp = std::make_unique<FakeLampProvider>();
         providers.Battery = std::make_unique<FakeBatteryProvider>();
+        providers.Depth = std::make_unique<FakeDepthProvider>();
         providers.Motors.reserve(motorCount);
+        providers.Proximity = std::make_unique<FakeProximityProvider>();
+        providers.Video = std::make_unique<FakeVideoProvider>();
 
         for (std::size_t index = 0; index < motorCount; ++index)
         {

@@ -2,9 +2,13 @@
     <qresource prefix="/PiSubmarine/Operator/Station">
         <file>qml/Main.qml</file>
         <file>qml/Main.Windows.qml</file>
+        <file alias="Telemetry/View/Ballast/BallastPanel.qml">../Telemetry/View/Ballast/BallastPanel.qml</file>
         <file alias="Telemetry/View/Battery/BatteryPanel.qml">../Telemetry/View/Battery/BatteryPanel.qml</file>
+        <file alias="Telemetry/View/Depth/DepthPanel.qml">../Telemetry/View/Depth/DepthPanel.qml</file>
         <file alias="Telemetry/View/Lamp/LampPanel.qml">../Telemetry/View/Lamp/LampPanel.qml</file>
         <file alias="Telemetry/View/Motor/MotorPanel.qml">../Telemetry/View/Motor/MotorPanel.qml</file>
-        <file alias="Input/View/ControlPanel.qml">../Input/View/ControlPanel.qml</file>
+        <file alias="Telemetry/View/Proximity/ProximityPanel.qml">../Telemetry/View/Proximity/ProximityPanel.qml</file>
+        <file alias="Telemetry/View/Video/VideoPanel.qml">../Telemetry/View/Video/VideoPanel.qml</file>
+        <file alias="Control/View/ControlPanel.qml">../Control/View/ControlPanel.qml</file>
     </qresource>
 </RCC>

@@ -2,31 +2,37 @@
 
 #include <QMetaObject>
 #include <QThread>
-#include <spdlog/spdlog.h>
 
 #include "PiSubmarine/Operator/Station/Telemetry/BatteryController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/BallastController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/DepthController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/ProximityController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h"
 
 namespace PiSubmarine::Operator::Station::Telemetry
 {
     Controller::Controller(
-        ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
         LampController& lampController,
         std::vector<std::reference_wrapper<MotorController>> motorControllers,
         BatteryController& batteryController,
+        BallastController& ballastController,
+        DepthController& depthController,
+        ProximityController& proximityController,
+        VideoStatusController& videoStatusController,
         PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
         : QObject(parent)
-        , m_LeaseIssuer(leaseIssuer)
         , m_LampController(lampController)
         , m_MotorControllers(std::move(motorControllers))
         , m_BatteryController(batteryController)
+        , m_BallastController(ballastController)
+        , m_DepthController(depthController)
+        , m_ProximityController(proximityController)
+        , m_VideoStatusController(videoStatusController)
         , m_Logger(loggerFactory.CreateLogger("Operator.Station.Telemetry.Controller"))
     {
-        m_Timer.setParent(this);
-        m_Timer.setInterval(200);
-        connect(&m_Timer, &QTimer::timeout, this, &Controller::Tick);
     }
 
     Controller::~Controller()
@@ -48,8 +54,6 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
 
         m_IsStarted = true;
-        m_StartTime = std::chrono::steady_clock::now();
-        m_Timer.start();
     }
 
     void Controller::Stop()
@@ -63,99 +67,33 @@ namespace PiSubmarine::Operator::Station::Telemetry
             return;
         }
 
-        m_Timer.stop();
-
-        if (!m_IsStarted && !m_Lease.has_value())
-        {
-            return;
-        }
-
-        m_IsStarted = false;
-
-        if (m_Lease.has_value())
-        {
-            static_cast<void>(m_LeaseIssuer.ReleaseLease(m_Lease->Id));
-        }
-
-        m_Lease.reset();
-        m_NextRenewal = std::chrono::nanoseconds::zero();
-    }
-
-    void Controller::Tick()
-    {
         if (!m_IsStarted)
         {
             return;
         }
 
-        const auto uptime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::steady_clock::now() - m_StartTime);
-
-        const auto leaseResult = EnsureLease(uptime);
-        if (leaseResult.has_value())
-        {
-            if (uptime >= m_NextRenewal)
-            {
-                RenewLease(uptime);
-            }
-
-            m_LampController.Refresh();
-            for (MotorController& motorController : m_MotorControllers)
-            {
-                motorController.Refresh();
-            }
-            m_BatteryController.Refresh();
-        }
-        else if (!IsNotReadyError(leaseResult.error()))
-        {
-            SPDLOG_LOGGER_WARN(m_Logger, "Telemetry lease acquisition failed");
-        }
+        m_IsStarted = false;
     }
 
-    bool Controller::IsNotReadyError(const Error::Api::Error& error)
+    void Controller::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)
     {
-        return error.Condition == Error::Api::ErrorCondition::NotReady;
-    }
+        static_cast<void>(uptime);
+        static_cast<void>(deltaTime);
 
-    Error::Api::Result<void> Controller::EnsureLease(const std::chrono::nanoseconds& uptime)
-    {
-        if (m_Lease.has_value())
-        {
-            return {};
-        }
-
-        const auto result = m_LeaseIssuer.AcquireLease({
-            .Resource = ::PiSubmarine::Lease::Api::ResourceId{.Value = "telemetry-main"}});
-
-        if (!result.has_value())
-        {
-            return std::unexpected(result.error());
-        }
-
-        m_Lease = result->Lease;
-        m_NextRenewal = uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_Lease->Duration / 2);
-        return {};
-    }
-
-    void Controller::RenewLease(const std::chrono::nanoseconds& uptime)
-    {
-        if (!m_Lease.has_value())
+        if (!m_IsStarted)
         {
             return;
         }
 
-        const auto result = m_LeaseIssuer.RenewLease(m_Lease->Id);
-        if (!result.has_value())
+        m_LampController.Refresh();
+        for (auto& motorController : m_MotorControllers)
         {
-            if (!IsNotReadyError(result.error()))
-            {
-                m_Lease.reset();
-                m_NextRenewal = std::chrono::nanoseconds::zero();
-            }
-            return;
+            static_cast<MotorController&>(motorController).Refresh();
         }
-
-        m_Lease = *result;
-        m_NextRenewal = uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_Lease->Duration / 2);
+        m_BatteryController.Refresh();
+        m_BallastController.Refresh();
+        m_DepthController.Refresh();
+        m_ProximityController.Refresh();
+        m_VideoStatusController.Refresh();
     }
 }

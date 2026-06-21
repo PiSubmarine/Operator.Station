@@ -24,6 +24,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         const auto stateResult = m_Provider.GetState();
         if (!stateResult.has_value())
         {
+            // TODO User-visible error reporting.
             return;
         }
 
