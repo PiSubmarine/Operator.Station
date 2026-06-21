@@ -5,6 +5,7 @@
 
 namespace PiSubmarine::Operator::Station::Shared
 {
+    // TODO Is it used anywhere? If not, remove.
     struct Endpoint
     {
         std::string Host = "127.0.0.1";
