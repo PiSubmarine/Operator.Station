@@ -5,6 +5,7 @@
 #include <optional>
 #include <QObject>
 #include <QString>
+#include <QMetaType>
 #include "PiSubmarine/Lease/Api/ILeaseIssuer.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Operator/Station/Video/Config.h"
@@ -47,6 +48,9 @@ namespace PiSubmarine::Operator::Station::Video
 		void SetReceiveEndpoint(const QString& bindAddress, quint16 port);
 		void SetSubscriptionEndpoint(const QString& host, quint16 port);
 
+    signals:
+        void StatusChanged(const PiSubmarine::Operator::Station::Video::Status& status);
+
 	private:
 		[[nodiscard]] static Error::Api::ErrorCondition GetNotReadyCondition();
 		[[nodiscard]] static bool IsNotReadyError(const Error::Api::Error& error);
@@ -54,6 +58,7 @@ namespace PiSubmarine::Operator::Station::Video
 		[[nodiscard]] Error::Api::Result<void> RenewLease(const std::chrono::nanoseconds& uptime);
 		[[nodiscard]] Error::Api::Result<void> EnsureSubscribed();
 		[[nodiscard]] Error::Api::Result<void> RebuildPipeline();
+        void PublishStatusIfChanged();
 		void ResetLeaseState() noexcept;
 		void ScheduleRetry(const std::chrono::nanoseconds& uptime) noexcept;
 
@@ -69,5 +74,8 @@ namespace PiSubmarine::Operator::Station::Video
 		bool m_IsStarted = false;
 		bool m_IsSubscribed = false;
 		bool m_IsDirty = true;
+        std::optional<Status> m_LastPublishedStatus;
 	};
 }
+
+Q_DECLARE_METATYPE(PiSubmarine::Operator::Station::Video::Status)

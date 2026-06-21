@@ -160,11 +160,14 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Video/Status.h
         PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.cpp
         PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.h
+        PiSubmarine/Operator/Station/Video/View/StatusOverlayViewModel.cpp
+        PiSubmarine/Operator/Station/Video/View/StatusOverlayViewModel.h
         PiSubmarine/Operator/Station/Video/View/ViewModel.cpp
         PiSubmarine/Operator/Station/Video/View/ViewModel.h
         PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.cpp
         PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.h
         PiSubmarine/Operator/Station/View/qml.qrc
+        PiSubmarine/Operator/Station/View/qml/OverlayContainer.qml
         PiSubmarine/Operator/Station/View/qml/Main.qml
         PiSubmarine/Operator/Station/View/qml/Main.Windows.qml
         PiSubmarine/Operator/Station/Video/GstreamerPipeline.cpp

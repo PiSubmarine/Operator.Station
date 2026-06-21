@@ -1,5 +1,7 @@
 #include "PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h"
 
+#include <cstdint>
+
 namespace PiSubmarine::Operator::Station::Telemetry
 {
     VideoStatusController::VideoStatusController(::PiSubmarine::Video::Telemetry::Api::IProvider& provider, QObject* parent)
@@ -25,7 +27,8 @@ namespace PiSubmarine::Operator::Station::Telemetry
                 m_LastStatus.IsStreamingEnabled,
                 m_LastStatus.Subscribers,
                 ToQString(m_LastStatus.Operational),
-                m_LastStatus.HasAnyFault());
+                m_LastStatus.HasAnyFault(),
+                ToFaultSummary(m_LastStatus.ActiveFaults));
         }
     }
 
@@ -42,5 +45,25 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
 
         return "Unknown";
+    }
+
+    QString VideoStatusController::ToFaultSummary(const ::PiSubmarine::Video::Telemetry::Api::Faults faults)
+    {
+        const auto rawFaults = static_cast<std::uint32_t>(faults);
+        const auto sourceError = static_cast<std::uint32_t>(::PiSubmarine::Video::Telemetry::Api::Faults::SourceError);
+        const auto configError = static_cast<std::uint32_t>(::PiSubmarine::Video::Telemetry::Api::Faults::ConfigError);
+        const auto networkError = static_cast<std::uint32_t>(::PiSubmarine::Video::Telemetry::Api::Faults::NetworkError);
+
+        if ((rawFaults & (sourceError | configError)) != 0)
+        {
+            return "CAMERA ERROR";
+        }
+
+        if ((rawFaults & networkError) != 0)
+        {
+            return "NETWORK ERROR";
+        }
+
+        return "CAMERA ERROR";
     }
 }

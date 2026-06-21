@@ -60,6 +60,7 @@
 #include "PiSubmarine/Operator/Station/Video/Controller.h"
 #include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
 #include "PiSubmarine/Operator/Station/Video/View/QmlVideoSinkTailFactory.h"
+#include "PiSubmarine/Operator/Station/Video/View/StatusOverlayViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.h"
 #include "PiSubmarine/Udp/Api/Endpoint.h"
@@ -191,6 +192,7 @@ int main(int argc, char* argv[])
     Q_INIT_RESOURCE(qml);
 
     QGuiApplication application(argc, argv);
+    qRegisterMetaType<PiSubmarine::Operator::Station::Video::Status>("PiSubmarine::Operator::Station::Video::Status");
 
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -310,6 +312,7 @@ int main(int argc, char* argv[])
     }
 
     PiSubmarine::Operator::Station::Video::View::ViewModel videoViewModel;
+    PiSubmarine::Operator::Station::Video::View::StatusOverlayViewModel videoStatusOverlayViewModel;
     videoViewModel.SetReceiveBindAddress(QString::fromStdString(videoBindEndpoint->Address));
     videoViewModel.SetReceivePort(videoBindEndpoint->Port);
     videoViewModel.SetSubscriptionHost("127.0.0.1");
@@ -327,6 +330,7 @@ int main(int argc, char* argv[])
     std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllers;
     std::vector<std::reference_wrapper<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllerRefs;
     QVariantList motorTelemetryViewModelList;
+    QVariantList videoOverlayViewModelList;
 
     motorTelemetryViewModels.reserve(DefaultTelemetryMotorCount);
     motorTelemetryControllers.reserve(DefaultTelemetryMotorCount);
@@ -340,6 +344,9 @@ int main(int argc, char* argv[])
         motorTelemetryViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(motorTelemetryViewModels.back().get())));
     }
 
+    videoOverlayViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(&videoStatusOverlayViewModel)));
+    videoOverlayViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(&videoTelemetryViewModel)));
+
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("videoViewModel", &videoViewModel);
     engine.rootContext()->setContextProperty("ballastTelemetryViewModel", &ballastTelemetryViewModel);
@@ -349,6 +356,7 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty("motorTelemetryViewModels", motorTelemetryViewModelList);
     engine.rootContext()->setContextProperty("proximityTelemetryViewModel", &proximityTelemetryViewModel);
     engine.rootContext()->setContextProperty("videoTelemetryViewModel", &videoTelemetryViewModel);
+    engine.rootContext()->setContextProperty("videoOverlayViewModels", videoOverlayViewModelList);
     engine.rootContext()->setContextProperty("batteryTelemetryViewModel", &batteryTelemetryViewModel);
     qmlRegisterType<PiSubmarine::Operator::Station::Video::View::VideoSurfaceItem>(
         "PiSubmarine.Operator.Station",
@@ -571,6 +579,12 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Video::View::ViewModel::SubscriptionEndpointChanged,
         videoController.get(),
         &PiSubmarine::Operator::Station::Video::Controller::SetSubscriptionEndpoint,
+        Qt::QueuedConnection);
+    QObject::connect(
+        videoController.get(),
+        &PiSubmarine::Operator::Station::Video::Controller::StatusChanged,
+        &videoStatusOverlayViewModel,
+        &PiSubmarine::Operator::Station::Video::View::StatusOverlayViewModel::SetStatus,
         Qt::QueuedConnection);
     QObject::connect(
         ballastTelemetryController.get(),

@@ -54,6 +54,7 @@ namespace PiSubmarine::Operator::Station::Video
         m_IsStarted = true;
         m_IsDirty = true;
         m_NextRetryTime = std::chrono::nanoseconds::zero();
+        PublishStatusIfChanged();
     }
 
     void Controller::Stop()
@@ -97,6 +98,7 @@ namespace PiSubmarine::Operator::Station::Video
         }
 
         ResetLeaseState();
+        PublishStatusIfChanged();
     }
 
     void Controller::SetReceiveEndpoint(const QString& bindAddress, const quint16 port)
@@ -198,6 +200,8 @@ namespace PiSubmarine::Operator::Station::Video
                 ScheduleRetry(uptime);
             }
         }
+
+        PublishStatusIfChanged();
     }
 
     Error::Api::ErrorCondition Controller::GetNotReadyCondition()
@@ -241,6 +245,7 @@ namespace PiSubmarine::Operator::Station::Video
             }
 
             ResetLeaseState();
+            PublishStatusIfChanged();
             return std::unexpected(renewResult.error());
         }
 
@@ -297,6 +302,18 @@ namespace PiSubmarine::Operator::Station::Video
 
         m_IsDirty = false;
         return {};
+    }
+
+    void Controller::PublishStatusIfChanged()
+    {
+        const auto status = GetStatus();
+        if (m_LastPublishedStatus.has_value() && *m_LastPublishedStatus == status)
+        {
+            return;
+        }
+
+        m_LastPublishedStatus = status;
+        emit StatusChanged(status);
     }
 
     void Controller::ResetLeaseState() noexcept

@@ -29,6 +29,16 @@ ApplicationWindow {
                 objectName: "videoSurface"
                 anchors.fill: parent
             }
+
+            Loader {
+                anchors.fill: parent
+                anchors.margins: 24
+                source: "qrc:/PiSubmarine/Operator/Station/View/OverlayContainer.qml"
+
+                onLoaded: {
+                    item.overlayViewModels = videoOverlayViewModels
+                }
+            }
         }
 
         ScrollView {
@@ -60,11 +70,6 @@ ApplicationWindow {
                 Loader {
                     Layout.fillWidth: true
                     source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastPanel.qml"
-                }
-
-                Loader {
-                    Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Video/VideoPanel.qml"
                 }
 
                 Repeater {

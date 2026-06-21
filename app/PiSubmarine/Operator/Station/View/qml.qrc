@@ -2,6 +2,7 @@
     <qresource prefix="/PiSubmarine/Operator/Station">
         <file>qml/Main.qml</file>
         <file>qml/Main.Windows.qml</file>
+        <file alias="View/OverlayContainer.qml">qml/OverlayContainer.qml</file>
         <file alias="Telemetry/View/Ballast/BallastPanel.qml">../Telemetry/View/Ballast/BallastPanel.qml</file>
         <file alias="Telemetry/View/Battery/BatteryPanel.qml">../Telemetry/View/Battery/BatteryPanel.qml</file>
         <file alias="Telemetry/View/Depth/DepthPanel.qml">../Telemetry/View/Depth/DepthPanel.qml</file>
