@@ -344,6 +344,7 @@ int main(int argc, char* argv[])
         motorTelemetryViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(motorTelemetryViewModels.back().get())));
     }
 
+    // TODO Can we shift responsibility of adding overlays to ViewModels? This is a question, I don't know if this is a good idea.
     videoOverlayViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(&videoStatusOverlayViewModel)));
     videoOverlayViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(&videoTelemetryViewModel)));
 
