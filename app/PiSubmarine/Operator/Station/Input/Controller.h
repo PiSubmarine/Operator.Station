@@ -37,6 +37,7 @@ namespace PiSubmarine::Operator::Station::Input
     signals:
         void BindingHintChanged(const QString& name, const QString& hint);
         void AllBindingsConfiguredChanged(bool allBindingsConfigured);
+        void CaptureTargetChanged(const QString& name);
         void CaptureInProgressChanged(bool captureInProgress);
         void StatusMessageChanged(const QString& message);
         void OnAxisBound(const QString& name, ::PiSubmarine::Input::Api::IAxis* axis);

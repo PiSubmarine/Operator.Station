@@ -18,6 +18,11 @@ namespace PiSubmarine::Operator::Station::Input::View
         return m_Hint;
     }
 
+    bool BindingEntryViewModel::GetCapturing() const
+    {
+        return m_Capturing;
+    }
+
     void BindingEntryViewModel::SetHint(const QString& hint)
     {
         if (m_Hint == hint)
@@ -27,5 +32,16 @@ namespace PiSubmarine::Operator::Station::Input::View
 
         m_Hint = hint;
         emit HintChanged();
+    }
+
+    void BindingEntryViewModel::SetCapturing(const bool capturing)
+    {
+        if (m_Capturing == capturing)
+        {
+            return;
+        }
+
+        m_Capturing = capturing;
+        emit CapturingChanged();
     }
 }

@@ -66,6 +66,7 @@ namespace PiSubmarine::Operator::Station::Input
 
         auto& binding = m_Bindings.at(bindingIt->second);
         m_PendingCaptureName = binding.Descriptor.Name;
+        emit CaptureTargetChanged(name);
         emit CaptureInProgressChanged(true);
 
         if (binding.Descriptor.Type == BindingType::Axis)
@@ -237,6 +238,7 @@ namespace PiSubmarine::Operator::Station::Input
         }
 
         m_PendingCaptureName.clear();
+        emit CaptureTargetChanged({});
         emit CaptureInProgressChanged(false);
 
         const auto bindingIt = m_BindingIndexByName.find(name);
@@ -273,6 +275,7 @@ namespace PiSubmarine::Operator::Station::Input
         }
 
         m_PendingCaptureName.clear();
+        emit CaptureTargetChanged({});
         emit CaptureInProgressChanged(false);
 
         const auto bindingIt = m_BindingIndexByName.find(name);

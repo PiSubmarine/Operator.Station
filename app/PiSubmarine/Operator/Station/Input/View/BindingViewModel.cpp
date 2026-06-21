@@ -28,11 +28,6 @@ namespace PiSubmarine::Operator::Station::Input::View
         return m_CaptureInProgress;
     }
 
-    QString BindingViewModel::GetStatusMessage() const
-    {
-        return m_StatusMessage;
-    }
-
     void BindingViewModel::Capture(const QString& name)
     {
         emit RequestCapture(name);
@@ -66,14 +61,11 @@ namespace PiSubmarine::Operator::Station::Input::View
         emit CaptureInProgressChanged();
     }
 
-    void BindingViewModel::SetStatusMessage(const QString& statusMessage)
+    void BindingViewModel::SetCaptureTarget(const QString& name)
     {
-        if (m_StatusMessage == statusMessage)
+        for (auto* entry : m_Entries)
         {
-            return;
+            entry->SetCapturing(entry->GetName() == name && !name.isEmpty());
         }
-
-        m_StatusMessage = statusMessage;
-        emit StatusMessageChanged();
     }
 }

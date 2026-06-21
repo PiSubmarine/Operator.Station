@@ -772,6 +772,12 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
     QObject::connect(
         inputController.get(),
+        &PiSubmarine::Operator::Station::Input::Controller::CaptureTargetChanged,
+        &inputBindingViewModel,
+        &PiSubmarine::Operator::Station::Input::View::BindingViewModel::SetCaptureTarget,
+        Qt::QueuedConnection);
+    QObject::connect(
+        inputController.get(),
         &PiSubmarine::Operator::Station::Input::Controller::AllBindingsConfiguredChanged,
         &controlStatusViewModel,
         &PiSubmarine::Operator::Station::Control::View::StatusViewModel::SetAllBindingsConfigured,
@@ -781,12 +787,6 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Input::Controller::CaptureInProgressChanged,
         &inputBindingViewModel,
         &PiSubmarine::Operator::Station::Input::View::BindingViewModel::SetCaptureInProgress,
-        Qt::QueuedConnection);
-    QObject::connect(
-        inputController.get(),
-        &PiSubmarine::Operator::Station::Input::Controller::StatusMessageChanged,
-        &inputBindingViewModel,
-        &PiSubmarine::Operator::Station::Input::View::BindingViewModel::SetStatusMessage,
         Qt::QueuedConnection);
     QObject::connect(
         inputController.get(),

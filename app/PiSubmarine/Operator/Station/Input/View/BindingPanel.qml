@@ -29,16 +29,8 @@ Rectangle {
         }
 
         Label {
-            width: parent.width
-            text: inputBindingViewModel.statusMessage
-            wrapMode: Text.WordWrap
-            color: inputBindingViewModel.captureInProgress ? "#ffd58a" : "#b6cedf"
-        }
-
-        Button {
-            visible: inputBindingViewModel.captureInProgress
-            text: "Cancel Capture"
-            onClicked: inputBindingViewModel.CancelCapture()
+            text: "Input Bindings"
+            visible: false
         }
 
         Rectangle {
@@ -101,8 +93,8 @@ Rectangle {
                             }
 
                             Label {
-                                text: modelData.hint
-                                color: "#f5fbff"
+                                text: modelData.capturing ? "CAPTURING" : modelData.hint
+                                color: modelData.capturing ? "#ffd58a" : "#f5fbff"
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
@@ -122,8 +114,14 @@ Rectangle {
 
                 Button {
                     width: parent.width
-                    text: "Close"
-                    onClicked: controlStatusViewModel.CloseBindingDialog()
+                    text: inputBindingViewModel.captureInProgress ? "Cancel Capture" : "Close"
+                    onClicked: {
+                        if (inputBindingViewModel.captureInProgress) {
+                            inputBindingViewModel.CancelCapture()
+                        } else {
+                            controlStatusViewModel.CloseBindingDialog()
+                        }
+                    }
                 }
             }
         }
