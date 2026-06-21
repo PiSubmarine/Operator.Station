@@ -9,6 +9,7 @@
 #include "PiSubmarine/Operator/Station/Telemetry/LampController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/ProximityController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/TimeController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h"
 
 namespace PiSubmarine::Operator::Station::Telemetry
@@ -20,6 +21,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         BallastController& ballastController,
         DepthController& depthController,
         ProximityController& proximityController,
+        TimeController& timeController,
         VideoStatusController& videoStatusController,
         PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
@@ -30,6 +32,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         , m_BallastController(ballastController)
         , m_DepthController(depthController)
         , m_ProximityController(proximityController)
+        , m_TimeController(timeController)
         , m_VideoStatusController(videoStatusController)
         , m_Logger(loggerFactory.CreateLogger("Operator.Station.Telemetry.Controller"))
     {
@@ -94,6 +97,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         m_BallastController.Refresh();
         m_DepthController.Refresh();
         m_ProximityController.Refresh();
+        m_TimeController.Refresh(uptime);
         m_VideoStatusController.Refresh();
     }
 }

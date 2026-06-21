@@ -21,7 +21,9 @@ namespace PiSubmarine::Operator::Station::Composition
         [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>>
         GetMotors() override;
         [[nodiscard]] ::PiSubmarine::Proximity::Telemetry::Api::IProvider& GetProximity() override;
+        [[nodiscard]] ::PiSubmarine::Time::Telemetry::Api::IProvider& GetTime() override;
         [[nodiscard]] ::PiSubmarine::Video::Telemetry::Api::IProvider& GetVideo() override;
+        [[nodiscard]] bool HasLease() const override;
         [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> GetTickables() override;
 
     private:

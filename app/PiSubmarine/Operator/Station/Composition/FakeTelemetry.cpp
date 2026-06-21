@@ -42,9 +42,19 @@ namespace PiSubmarine::Operator::Station::Composition
         return *m_Providers.Proximity;
     }
 
+    ::PiSubmarine::Time::Telemetry::Api::IProvider& FakeTelemetry::GetTime()
+    {
+        return *m_Providers.Time;
+    }
+
     ::PiSubmarine::Video::Telemetry::Api::IProvider& FakeTelemetry::GetVideo()
     {
         return *m_Providers.Video;
+    }
+
+    bool FakeTelemetry::HasLease() const
+    {
+        return true;
     }
 
     std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> FakeTelemetry::GetTickables()

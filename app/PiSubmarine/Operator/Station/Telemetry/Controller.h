@@ -22,6 +22,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
     class BallastController;
     class DepthController;
     class ProximityController;
+    class TimeController;
     class VideoStatusController;
 
     class Controller : public QObject, public ::PiSubmarine::Time::ITickable
@@ -36,6 +37,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
             BallastController& ballastController,
             DepthController& depthController,
             ProximityController& proximityController,
+            TimeController& timeController,
             VideoStatusController& videoStatusController,
             PiSubmarine::Logging::Api::IFactory& loggerFactory,
             QObject* parent = nullptr);
@@ -53,6 +55,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         BallastController& m_BallastController;
         DepthController& m_DepthController;
         ProximityController& m_ProximityController;
+        TimeController& m_TimeController;
         VideoStatusController& m_VideoStatusController;
         std::shared_ptr<spdlog::logger> m_Logger;
         bool m_IsStarted = false;

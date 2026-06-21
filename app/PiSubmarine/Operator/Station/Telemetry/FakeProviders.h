@@ -9,6 +9,7 @@
 #include "PiSubmarine/Lamp/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Motor/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Proximity/Telemetry/Api/IProvider.h"
+#include "PiSubmarine/Time/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Video/Telemetry/Api/IProvider.h"
 
 namespace PiSubmarine::Operator::Station::Telemetry
@@ -21,6 +22,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         std::unique_ptr<::PiSubmarine::Battery::Telemetry::Api::IProvider> Battery;
         std::unique_ptr<::PiSubmarine::Depth::Telemetry::Api::IProvider> Depth;
         std::unique_ptr<::PiSubmarine::Proximity::Telemetry::Api::IProvider> Proximity;
+        std::unique_ptr<::PiSubmarine::Time::Telemetry::Api::IProvider> Time;
         std::unique_ptr<::PiSubmarine::Video::Telemetry::Api::IProvider> Video;
     };
 

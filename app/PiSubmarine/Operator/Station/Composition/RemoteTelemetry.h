@@ -16,6 +16,7 @@
 #include "PiSubmarine/Security/Nonce/Openssl/Provider.h"
 #include "PiSubmarine/Telemetry/Client/Udp/Client.h"
 #include "PiSubmarine/Telemetry/Client/Udp/Source.h"
+#include "PiSubmarine/Time/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Udp/Api/Endpoint.h"
 #include "PiSubmarine/Udp/Asio/Socket.h"
 #include "PiSubmarine/Video/Telemetry/Protobuf/Deserializer.h"
@@ -42,7 +43,9 @@ namespace PiSubmarine::Operator::Station::Composition
         [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>>
         GetMotors() override;
         [[nodiscard]] ::PiSubmarine::Proximity::Telemetry::Api::IProvider& GetProximity() override;
+        [[nodiscard]] ::PiSubmarine::Time::Telemetry::Api::IProvider& GetTime() override;
         [[nodiscard]] ::PiSubmarine::Video::Telemetry::Api::IProvider& GetVideo() override;
+        [[nodiscard]] bool HasLease() const override;
         [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> GetTickables() override;
 
     private:
@@ -56,6 +59,7 @@ namespace PiSubmarine::Operator::Station::Composition
         ::PiSubmarine::Telemetry::Client::Udp::Source m_DepthSource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_LampSource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_ProximitySource;
+        ::PiSubmarine::Telemetry::Client::Udp::Source m_TimeSource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_VideoSource;
 
         ::PiSubmarine::Ballast::Telemetry::Protobuf::Deserializer m_BallastProvider;
@@ -63,6 +67,7 @@ namespace PiSubmarine::Operator::Station::Composition
         ::PiSubmarine::Depth::Telemetry::Protobuf::Deserializer m_DepthProvider;
         ::PiSubmarine::Lamp::Telemetry::Protobuf::Deserializer m_LampProvider;
         ::PiSubmarine::Proximity::Telemetry::Protobuf::Deserializer m_ProximityProvider;
+        ::PiSubmarine::Time::Telemetry::Protobuf::Deserializer m_TimeProvider;
         ::PiSubmarine::Video::Telemetry::Protobuf::Deserializer m_VideoProvider;
 
         std::vector<std::unique_ptr<::PiSubmarine::Telemetry::Client::Udp::Source>> m_MotorSources;

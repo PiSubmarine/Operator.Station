@@ -40,12 +40,14 @@ namespace PiSubmarine::Operator::Station::Composition
         , m_DepthSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::DepthMain))
         , m_LampSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::LampMain))
         , m_ProximitySource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::ProximityMain))
+        , m_TimeSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::TimeMain))
         , m_VideoSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::VideoMain))
         , m_BallastProvider(m_BallastSource)
         , m_BatteryProvider(m_BatterySource)
         , m_DepthProvider(m_DepthSource)
         , m_LampProvider(m_LampSource)
         , m_ProximityProvider(m_ProximitySource)
+        , m_TimeProvider(m_TimeSource)
         , m_VideoProvider(m_VideoSource)
     {
         const auto bindResult = m_Socket.Bind(::PiSubmarine::Udp::Api::Endpoint{
@@ -103,9 +105,19 @@ namespace PiSubmarine::Operator::Station::Composition
         return m_ProximityProvider;
     }
 
+    ::PiSubmarine::Time::Telemetry::Api::IProvider& RemoteTelemetry::GetTime()
+    {
+        return m_TimeProvider;
+    }
+
     ::PiSubmarine::Video::Telemetry::Api::IProvider& RemoteTelemetry::GetVideo()
     {
         return m_VideoProvider;
+    }
+
+    bool RemoteTelemetry::HasLease() const
+    {
+        return m_Client.HasLease();
     }
 
     std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> RemoteTelemetry::GetTickables()

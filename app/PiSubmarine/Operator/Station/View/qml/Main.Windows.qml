@@ -34,6 +34,14 @@ ApplicationWindow {
             }
 
             Loader {
+                z: 2
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.topMargin: 12
+                source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Time/TimePanel.qml"
+            }
+
+            Loader {
                 anchors.fill: parent
                 anchors.margins: 24
                 source: "qrc:/PiSubmarine/Operator/Station/View/OverlayContainer.qml"

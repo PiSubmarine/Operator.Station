@@ -153,6 +153,32 @@ namespace PiSubmarine::Operator::Station::Telemetry
         private:
             mutable int m_Tick = 0;
         };
+
+        class FakeTimeProvider final : public ::PiSubmarine::Time::Telemetry::Api::IProvider
+        {
+        public:
+            [[nodiscard]] Error::Api::Result<::PiSubmarine::Time::Telemetry::Api::State> GetState() const override
+            {
+                ++m_Tick;
+
+                // Hold the same uptime for a while so the UI can demonstrate stale telemetry colors in fake mode.
+                if (m_Tick % 220 < 110)
+                {
+                    m_Uptime += std::chrono::milliseconds{10};
+                }
+
+                m_SystemTime += std::chrono::milliseconds{10};
+                return ::PiSubmarine::Time::Telemetry::Api::State{
+                    .Uptime = m_Uptime,
+                    .SystemTime = m_SystemTime};
+            }
+
+        private:
+            mutable int m_Tick = 0;
+            mutable std::chrono::nanoseconds m_Uptime{0};
+            mutable ::PiSubmarine::Time::Telemetry::Api::SystemTimePoint m_SystemTime{
+                std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now())};
+        };
     }
 
     FakeProviders CreateFakeProviders(const std::size_t motorCount)
@@ -164,6 +190,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         providers.Depth = std::make_unique<FakeDepthProvider>();
         providers.Motors.reserve(motorCount);
         providers.Proximity = std::make_unique<FakeProximityProvider>();
+        providers.Time = std::make_unique<FakeTimeProvider>();
         providers.Video = std::make_unique<FakeVideoProvider>();
 
         for (std::size_t index = 0; index < motorCount; ++index)

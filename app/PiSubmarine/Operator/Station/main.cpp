@@ -47,6 +47,7 @@
 #include "PiSubmarine/Operator/Station/Telemetry/DepthController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/MotorController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/ProximityController.h"
+#include "PiSubmarine/Operator/Station/Telemetry/TimeController.h"
 #include "PiSubmarine/Operator/Station/Telemetry/Controller.h"
 #include "PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h"
 #include "PiSubmarine/Operator/Station/Time/TickRunner.h"
@@ -56,6 +57,7 @@
 #include "PiSubmarine/Operator/Station/Telemetry/View/Lamp/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Motor/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.h"
+#include "PiSubmarine/Operator/Station/Telemetry/View/Time/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/Controller.h"
 #include "PiSubmarine/Operator/Station/Video/GstreamerPipeline.h"
@@ -323,6 +325,7 @@ int main(int argc, char* argv[])
     PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel lampTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Depth::ViewModel depthTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Proximity::ViewModel proximityTelemetryViewModel;
+    PiSubmarine::Operator::Station::Telemetry::View::Time::ViewModel timeTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Video::ViewModel videoTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Battery::ViewModel batteryTelemetryViewModel;
 
@@ -356,6 +359,7 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty("lampTelemetryViewModel", &lampTelemetryViewModel);
     engine.rootContext()->setContextProperty("motorTelemetryViewModels", motorTelemetryViewModelList);
     engine.rootContext()->setContextProperty("proximityTelemetryViewModel", &proximityTelemetryViewModel);
+    engine.rootContext()->setContextProperty("timeTelemetryViewModel", &timeTelemetryViewModel);
     engine.rootContext()->setContextProperty("videoTelemetryViewModel", &videoTelemetryViewModel);
     engine.rootContext()->setContextProperty("videoOverlayViewModels", videoOverlayViewModelList);
     engine.rootContext()->setContextProperty("batteryTelemetryViewModel", &batteryTelemetryViewModel);
@@ -514,6 +518,10 @@ int main(int argc, char* argv[])
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::LampController>(telemetry->GetLamp());
     auto proximityTelemetryController =
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::ProximityController>(telemetry->GetProximity());
+    auto timeTelemetryController =
+        std::make_unique<PiSubmarine::Operator::Station::Telemetry::TimeController>(
+            telemetry->GetTime(),
+            [telemetry = telemetry.get()] { return telemetry->HasLease(); });
     auto videoStatusTelemetryController =
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::VideoStatusController>(telemetry->GetVideo());
 
@@ -531,6 +539,7 @@ int main(int argc, char* argv[])
         *ballastTelemetryController,
         *depthTelemetryController,
         *proximityTelemetryController,
+        *timeTelemetryController,
         *videoStatusTelemetryController,
         loggerFactory);
     auto controlController = std::make_unique<PiSubmarine::Operator::Station::Control::Controller>(
@@ -627,6 +636,12 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Telemetry::View::Proximity::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
     QObject::connect(
+        timeTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::TimeController::SnapshotChanged,
+        &timeTelemetryViewModel,
+        &PiSubmarine::Operator::Station::Telemetry::View::Time::ViewModel::SetSnapshot,
+        Qt::QueuedConnection);
+    QObject::connect(
         videoStatusTelemetryController.get(),
         &PiSubmarine::Operator::Station::Telemetry::VideoStatusController::SnapshotChanged,
         &videoTelemetryViewModel,
@@ -648,6 +663,7 @@ int main(int argc, char* argv[])
         motorTelemetryController->moveToThread(&controllerThread);
     }
     proximityTelemetryController->moveToThread(&controllerThread);
+    timeTelemetryController->moveToThread(&controllerThread);
     videoStatusTelemetryController->moveToThread(&controllerThread);
     batteryTelemetryController->moveToThread(&controllerThread);
     telemetryController->moveToThread(&controllerThread);
@@ -694,6 +710,7 @@ int main(int argc, char* argv[])
             DeleteLaterOnObjectThread(motorTelemetryController);
         }
         DeleteLaterOnObjectThread(proximityTelemetryController);
+        DeleteLaterOnObjectThread(timeTelemetryController);
         DeleteLaterOnObjectThread(videoStatusTelemetryController);
         DeleteLaterOnObjectThread(batteryTelemetryController);
         DeleteLaterOnObjectThread(telemetryController);

@@ -53,6 +53,8 @@ PiSubmarineAddDependency("https://github.com/PiSubmarine/Security.Nonce.Openssl.
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Telemetry.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Telemetry.Channels.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Telemetry.Client.Udp.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Time.Telemetry.Api.git" "")
+PiSubmarineAddDependency("https://github.com/PiSubmarine/Time.Telemetry.Protobuf.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Time.Manager.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Time.Tickable.Api.git" "")
 PiSubmarineAddDependency("https://github.com/PiSubmarine/Udp.Asio.git" "")
@@ -118,6 +120,8 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/MotorController.h
         PiSubmarine/Operator/Station/Telemetry/ProximityController.cpp
         PiSubmarine/Operator/Station/Telemetry/ProximityController.h
+        PiSubmarine/Operator/Station/Telemetry/TimeController.cpp
+        PiSubmarine/Operator/Station/Telemetry/TimeController.h
         PiSubmarine/Operator/Station/Telemetry/VideoStatusController.cpp
         PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h
         PiSubmarine/Operator/Station/Time/TickRunner.cpp
@@ -140,6 +144,9 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.h
+        PiSubmarine/Operator/Station/Telemetry/View/Time/TimePanel.qml
+        PiSubmarine/Operator/Station/Telemetry/View/Time/ViewModel.cpp
+        PiSubmarine/Operator/Station/Telemetry/View/Time/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Video/VideoPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.h
@@ -209,6 +216,8 @@ target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Se
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Telemetry.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Telemetry.Channels.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Telemetry.Client.Udp)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Time.Telemetry.Api)
+target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Time.Telemetry.Protobuf)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Time.Manager)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Time.Tickable.Api)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.AppCommon PUBLIC PiSubmarine.Udp.Asio)
