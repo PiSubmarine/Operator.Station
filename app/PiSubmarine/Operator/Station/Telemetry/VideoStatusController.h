@@ -7,6 +7,7 @@
 
 namespace PiSubmarine::Operator::Station::Telemetry
 {
+    // TODO Rename to VideoController
     class VideoStatusController final : public QObject
     {
         Q_OBJECT
