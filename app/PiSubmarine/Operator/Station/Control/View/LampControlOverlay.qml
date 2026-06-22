@@ -1,11 +1,12 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 Rectangle {
-    color: "#f0091823"
-    radius: 16
-    border.color: "#2d617a"
+    color: Theme.panelBackground
+    radius: Theme.panelRadius
+    border.color: Theme.panelBorder
     border.width: 1
     implicitWidth: 220
     implicitHeight: 96
@@ -20,8 +21,8 @@ Rectangle {
 
             Label {
                 text: "LMP"
-                color: "#eef7ff"
-                font.pixelSize: 14
+                color: Theme.textColorH3
+                font.pixelSize: Theme.textFontSizeH3
                 font.bold: true
             }
 
@@ -31,8 +32,8 @@ Rectangle {
 
             Label {
                 text: Math.round(controlViewModel.lampIntensity * 100) + "%"
-                color: "#dbefff"
-                font.pixelSize: 14
+                color: Theme.textColorH3
+                font.pixelSize: Theme.textFontSizeH3
                 font.bold: true
             }
         }
@@ -44,16 +45,16 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
-                radius: 10
+                radius: Theme.buttonRadius
                 border.width: 1
-                border.color: lampIncreaseTapHandler.pressed ? "#8fd3ff" : "#2d617a"
-                color: lampIncreaseTapHandler.pressed ? "#2f6f8d" : (lampIncreaseHoverHandler.hovered ? "#244e65" : "#173447")
+                border.color: lampIncreaseTapHandler.pressed ? Theme.buttonPressedBorder : Theme.panelBorder
+                color: lampIncreaseTapHandler.pressed ? Theme.buttonPressedBackground : (lampIncreaseHoverHandler.hovered ? Theme.buttonHoverBackground : Theme.panelBackground)
 
                 Label {
                     anchors.centerIn: parent
                     text: "INC"
-                    color: "#eef7ff"
-                    font.pixelSize: 12
+                    color: Theme.textColorH4
+                    font.pixelSize: Theme.textFontSizeH4
                     font.bold: true
                 }
 
@@ -70,16 +71,16 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
-                radius: 10
+                radius: Theme.buttonRadius
                 border.width: 1
-                border.color: lampDecreaseTapHandler.pressed ? "#8fd3ff" : "#2d617a"
-                color: lampDecreaseTapHandler.pressed ? "#2f6f8d" : (lampDecreaseHoverHandler.hovered ? "#244e65" : "#173447")
+                border.color: lampDecreaseTapHandler.pressed ? Theme.buttonPressedBorder : Theme.panelBorder
+                color: lampDecreaseTapHandler.pressed ? Theme.buttonPressedBackground : (lampDecreaseHoverHandler.hovered ? Theme.buttonHoverBackground : Theme.panelBackground)
 
                 Label {
                     anchors.centerIn: parent
                     text: "DEC"
-                    color: "#eef7ff"
-                    font.pixelSize: 12
+                    color: Theme.textColorH4
+                    font.pixelSize: Theme.textFontSizeH4
                     font.bold: true
                 }
 

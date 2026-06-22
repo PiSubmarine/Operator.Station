@@ -1,11 +1,12 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 Rectangle {
-    color: "#13202d"
-    radius: 18
-    border.color: "#25465d"
+    color: Theme.panelBackground
+    radius: Theme.panelRadius
+    border.color: Theme.panelBorder
     border.width: 1
     implicitWidth: 520
     implicitHeight: contentColumn.implicitHeight + 28
@@ -22,22 +23,11 @@ Rectangle {
         y: 14
         spacing: 10
 
-        Label {
-            text: "Input Bindings"
-            color: "#dbefff"
-            font.pixelSize: 22
-        }
-
-        Label {
-            text: "Input Bindings"
-            visible: false
-        }
-
         Rectangle {
             width: parent.width
-            color: "#0f1821"
+            color: Theme.panelBackground
             radius: 12
-            border.color: "#203749"
+            border.color: Theme.panelBorder
             implicitHeight: tableColumn.implicitHeight + 20
 
             Column {
@@ -53,16 +43,18 @@ Rectangle {
 
                     Label {
                         text: "Path"
-                        color: "#8fb4ca"
+                        color: Theme.textColorH2
                         font.bold: true
                         Layout.preferredWidth: 120
+                        font.pixelSize: Theme.textFontSizeH2
                     }
 
                     Label {
                         text: "Binding"
-                        color: "#8fb4ca"
+                        color: Theme.textColorH2
                         font.bold: true
                         Layout.fillWidth: true
+                        font.pixelSize: Theme.textFontSizeH2
                     }
                 }
 
@@ -75,8 +67,8 @@ Rectangle {
                         width: tableColumn.width
                         implicitHeight: 40
                         radius: 8
-                        color: "#12202c"
-                        border.color: "#1d3344"
+                        color: Theme.panelBackground
+                        border.color: Theme.panelBorder
 
                         RowLayout {
                             anchors.fill: parent
@@ -85,16 +77,18 @@ Rectangle {
 
                             Label {
                                 text: modelData.name
-                                color: "#c0d7e7"
+                                color: Theme.textColorH4
                                 Layout.preferredWidth: 120
                                 elide: Text.ElideRight
+                                font.pixelSize: Theme.textFontSizeH4
                             }
 
                             Label {
                                 text: modelData.capturing ? "CAPTURING" : modelData.hint
-                                color: modelData.capturing ? "#ffd58a" : "#f5fbff"
+                                color: modelData.capturing ? Theme.textWarning : Theme.textColorH4
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
+                                font.pixelSize: Theme.textFontSizeH4
                             }
                         }
 
@@ -110,15 +104,39 @@ Rectangle {
                     height: 4
                 }
 
-                Button {
+                Rectangle {
                     width: parent.width
-                    text: inputBindingViewModel.captureInProgress ? "Cancel Capture" : "Close"
-                    onClicked: {
+                    implicitHeight: 32
+                    radius: Theme.buttonRadius
+                    border.width: 1
+                    border.color: actionTapHandler.pressed ? Theme.buttonPressedBorder : Theme.panelBorder
+                    color: actionTapHandler.pressed
+                        ? Theme.buttonPressedBackground
+                        : (actionHoverHandler.hovered ? Theme.buttonHoverBackground : Theme.panelBackground)
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: inputBindingViewModel.captureInProgress ? "Cancel Capture" : "Close"
+                        color: Theme.textColorH4
+                        font.pixelSize: Theme.textFontSizeH4
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    HoverHandler {
+                        id: actionHoverHandler
+                    }
+
+                    TapHandler {
+                        id: actionTapHandler
+                        onTapped: {
                         if (inputBindingViewModel.captureInProgress) {
                             inputBindingViewModel.CancelCapture()
                         } else {
                             controlStatusViewModel.CloseBindingDialog()
                         }
+                    }
                     }
                 }
             }

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 Rectangle {
     id: root
@@ -10,14 +11,14 @@ Rectangle {
     component IndicatorLabel: Label {
         id: indicator
 
-        property color neutralColor: "#d7e9f6"
+        property color neutralColor: Theme.textColorH4
         property color targetColor: neutralColor
         property color displayedColor: neutralColor
         property int lingerDuration: root.lingerDuration
 
         color: displayedColor
         font.bold: true
-        font.pixelSize: 12
+        font.pixelSize: Theme.textFontSizeH4
 
         function updateDisplayedColor() {
             if (targetColor === neutralColor) {
@@ -47,9 +48,9 @@ Rectangle {
 
     implicitWidth: 80
     implicitHeight: 100
-    radius: 12
-    color: "#f0091823"
-    border.color: "#2d617a"
+    radius: Theme.panelRadius
+    color: Theme.panelBackground
+    border.color: Theme.panelBorder
     border.width: 1
     clip: true
 
@@ -63,8 +64,8 @@ Rectangle {
 
             Label {
                 text: "LMP"
-                color: "#eef7ff"
-                font.pixelSize: 12
+                color: Theme.textColorH4
+                font.pixelSize: Theme.textFontSizeH4
                 font.bold: true
             }
 
@@ -74,8 +75,8 @@ Rectangle {
 
             Label {
                 text: Math.round(lampTelemetryViewModel.intensity * 100) + "%"
-                color: "#dbefff"
-                font.pixelSize: 12
+                color: Theme.textColorH4
+                font.pixelSize: Theme.textFontSizeH4
                 font.bold: true
             }
         }
@@ -91,27 +92,27 @@ Rectangle {
 
             IndicatorLabel {
                 text: "OC"
-                targetColor: lampTelemetryViewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
+                targetColor: lampTelemetryViewModel.hasOvercurrentFault ? Theme.textFault : neutralColor
             }
             IndicatorLabel {
                 text: "OT"
                 targetColor: lampTelemetryViewModel.hasOvertemperatureFault
-                    ? "#ff5f56"
+                    ? Theme.textFault
                     : lampTelemetryViewModel.hasTemperatureWarning
-                        ? "#ffd166"
+                        ? Theme.textWarning
                         : neutralColor
             }
             IndicatorLabel {
                 text: "UV"
-                targetColor: lampTelemetryViewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
+                targetColor: lampTelemetryViewModel.hasUndervoltageFault ? Theme.textFault : neutralColor
             }
             IndicatorLabel {
                 text: "OV"
-                targetColor: lampTelemetryViewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
+                targetColor: lampTelemetryViewModel.hasOvervoltageFault ? Theme.textFault : neutralColor
             }
             IndicatorLabel {
                 text: "OL"
-                targetColor: lampTelemetryViewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
+                targetColor: lampTelemetryViewModel.hasOpenLoadFault ? Theme.textFault : neutralColor
             }
         }
     }

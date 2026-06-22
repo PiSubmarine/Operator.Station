@@ -41,7 +41,7 @@ namespace PiSubmarine::Operator::Station::Telemetry::View::Video
 
         if (m_OperationalState == "Stopped")
         {
-            return "#4b5563";
+            return "#f0091823";
         }
 
         return "transparent";

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 Item {
     id: root
@@ -29,7 +30,9 @@ Item {
                 radius: 16
                 color: modelData !== null ? modelData.overlayBackgroundColor : "transparent"
                 border.width: visible ? 1 : 0
-                border.color: "#dbefff"
+                border.color: modelData !== null && modelData.overlayBackgroundColor === Theme.panelBackgroundFault
+                    ? Theme.panelBorderFault
+                    : Theme.panelBorder
                 opacity: 0.94
 
                 Label {
@@ -37,8 +40,8 @@ Item {
 
                     anchors.centerIn: parent
                     text: modelData !== null ? modelData.overlayMessage : ""
-                    color: "#f7fbff"
-                    font.pixelSize: 24
+                    color: Theme.textColorH1
+                    font.pixelSize: Theme.textFontSizeH1
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

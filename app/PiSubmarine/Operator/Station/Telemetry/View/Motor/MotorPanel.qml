@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 Rectangle {
     id: root
@@ -11,14 +12,14 @@ Rectangle {
     component IndicatorLabel: Label {
         id: indicator
 
-        property color neutralColor: "#d7e9f6"
+        property color neutralColor: Theme.textColorH4
         property color targetColor: neutralColor
         property color displayedColor: neutralColor
         property int lingerDuration: root.lingerDuration
 
         color: displayedColor
         font.bold: true
-        font.pixelSize: 12
+        font.pixelSize: Theme.textFontSizeH4
 
         function updateDisplayedColor() {
             if (targetColor === neutralColor) {
@@ -53,9 +54,9 @@ Rectangle {
 
     implicitWidth: 80
     implicitHeight: 100
-    radius: 12
-    color: "#f0091823"
-    border.color: "#2d617a"
+    radius: Theme.panelRadius
+    color: Theme.panelBackground
+    border.color: Theme.panelBorder
     border.width: 1
     clip: true
 
@@ -69,8 +70,8 @@ Rectangle {
 
             Label {
                 text: viewModel !== null ? viewModel.panelLabel : "Motor"
-                color: "#eef7ff"
-                font.pixelSize: 12
+                color: Theme.textColorH4
+                font.pixelSize: Theme.textFontSizeH4
                 font.bold: true
             }
 
@@ -80,8 +81,8 @@ Rectangle {
 
             Label {
                 text: viewModel !== null ? Math.round(viewModel.driveEffortPercent) + "%" : "0%"
-                color: "#dbefff"
-                font.pixelSize: 12
+                color: Theme.textColorH4
+                font.pixelSize: Theme.textFontSizeH4
                 font.bold: true
             }
         }
@@ -97,27 +98,27 @@ Rectangle {
 
             IndicatorLabel {
                 text: "OC"
-                targetColor: viewModel !== null && viewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
+                targetColor: viewModel !== null && viewModel.hasOvercurrentFault ? Theme.textFault : neutralColor
             }
             IndicatorLabel {
                 text: "OT"
                 targetColor: viewModel !== null && viewModel.hasOvertemperatureFault
-                    ? "#ff5f56"
+                    ? Theme.textFault
                     : viewModel !== null && viewModel.hasTemperatureWarning
-                        ? "#ffd166"
+                        ? Theme.textWarning
                         : neutralColor
             }
             IndicatorLabel {
                 text: "UV"
-                targetColor: viewModel !== null && viewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
+                targetColor: viewModel !== null && viewModel.hasUndervoltageFault ? Theme.textFault : neutralColor
             }
             IndicatorLabel {
                 text: "OV"
-                targetColor: viewModel !== null && viewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
+                targetColor: viewModel !== null && viewModel.hasOvervoltageFault ? Theme.textFault : neutralColor
             }
             IndicatorLabel {
                 text: "OL"
-                targetColor: viewModel !== null && viewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
+                targetColor: viewModel !== null && viewModel.hasOpenLoadFault ? Theme.textFault : neutralColor
             }
         }
     }

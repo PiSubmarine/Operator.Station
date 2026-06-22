@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 GridLayout {
     columns: 2
@@ -9,8 +10,8 @@ GridLayout {
 
     Label {
         text: "DEP"
-        color: "#9db7c7"
-        font.pixelSize: 14
+        color: Theme.textColorH4
+        font.pixelSize: Theme.textFontSizeH4
         font.bold: true
     }
 
@@ -18,7 +19,7 @@ GridLayout {
         text: depthTelemetryViewModel.hasDepth
             ? depthTelemetryViewModel.depthMeters.toFixed(2) + " m"
             : "--.-- m"
-        color: "#dbefff"
-        font.pixelSize: 12
+        color: Theme.textColorH4
+        font.pixelSize: Theme.textFontSizeH4
     }
 }

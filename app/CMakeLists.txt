@@ -95,7 +95,6 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Control/Controller.h
         PiSubmarine/Operator/Station/Control/FakeSink.cpp
         PiSubmarine/Operator/Station/Control/FakeSink.h
-        PiSubmarine/Operator/Station/Control/View/ControlPanel.qml
         PiSubmarine/Operator/Station/Control/View/StatusPanel.qml
         PiSubmarine/Operator/Station/Control/View/StatusViewModel.cpp
         PiSubmarine/Operator/Station/Control/View/StatusViewModel.h
@@ -143,7 +142,6 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/VideoStatusController.h
         PiSubmarine/Operator/Station/Time/TickRunner.cpp
         PiSubmarine/Operator/Station/Time/TickRunner.h
-        PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Ballast/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Ballast/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml
@@ -151,7 +149,6 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Depth/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Depth/ViewModel.h
-        PiSubmarine/Operator/Station/Telemetry/View/Lamp/LampPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Lamp/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Lamp/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml
@@ -162,7 +159,6 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/View/Time/TimePanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Time/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Time/ViewModel.h
-        PiSubmarine/Operator/Station/Telemetry/View/Video/VideoPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.h
         PiSubmarine/Operator/Station/Video/Config.h

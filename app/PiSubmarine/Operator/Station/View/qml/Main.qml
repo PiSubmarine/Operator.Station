@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 ApplicationWindow {
     visible: true
     width: 1440
     height: 860
-    color: "#08111a"
+    color: Theme.windowBackground
     title: "PiSubmarine Operator Station"
 
     Item {
@@ -15,9 +16,9 @@ ApplicationWindow {
         Rectangle {
             anchors.fill: parent
             anchors.margins: 16
-            color: "#03070b"
+            color: Theme.videoFrameBackground
             radius: 20
-            border.color: "#163348"
+            border.color: Theme.videoFrameBorder
             clip: true
 
             Item {
@@ -87,29 +88,23 @@ ApplicationWindow {
                 }
 
                 Rectangle {
-                    color: "#f0091823"
-                    radius: 16
-                    border.color: "#2d617a"
+                    color: Theme.panelBackground
+                    radius: Theme.panelRadius
+                    border.color: Theme.panelBorder
                     border.width: 1
                     implicitWidth: 168
-                    implicitHeight: 104
+                    implicitHeight: contentColumn.implicitHeight + 24
 
                     Column {
-                        anchors.fill: parent
-                        anchors.margins: 12
+                        id: contentColumn
+                        x: 12
+                        y: 12
+                        width: parent.implicitWidth - 24
                         spacing: 6
 
-                        Loader {
-                            source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityOverlayRow.qml"
-                        }
-
-                        Loader {
-                            source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthOverlayRow.qml"
-                        }
-
-                        Loader {
-                            source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastOverlayRow.qml"
-                        }
+                        Loader { source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityOverlayRow.qml" }
+                        Loader { source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthOverlayRow.qml" }
+                        Loader { source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastOverlayRow.qml" }
                     }
                 }
 
@@ -134,18 +129,19 @@ ApplicationWindow {
                 }
 
                 Loader {
-                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/VerticalControlOverlay.qml"
+                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/LampControlOverlay.qml"
                 }
 
                 Loader {
-                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/LampControlOverlay.qml"
+                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/VerticalControlOverlay.qml"
                 }
+
             }
 
             Rectangle {
                 z: 4
                 anchors.fill: parent
-                color: "#02070dcc"
+                color: Theme.modalScrimBackground
                 visible: controlStatusViewModel.bindingDialogVisible
 
                 TapHandler {
