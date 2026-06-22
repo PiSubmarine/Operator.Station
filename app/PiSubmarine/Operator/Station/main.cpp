@@ -409,6 +409,16 @@ int main(int argc, char* argv[])
     std::vector<std::reference_wrapper<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllerRefs;
     QVariantList motorTelemetryViewModelList;
     QVariantList videoOverlayViewModelList;
+    constexpr std::array MotorTelemetryLabels{
+        "Front Left",
+        "Front Right",
+        "Rear Left",
+        "Rear Right"};
+    constexpr std::array MotorTelemetryFillFromTop{
+        false,
+        false,
+        true,
+        true};
 
     motorTelemetryViewModels.reserve(DefaultTelemetryMotorCount);
     motorTelemetryControllers.reserve(DefaultTelemetryMotorCount);
@@ -418,7 +428,9 @@ int main(int argc, char* argv[])
     for (std::size_t index = 0; index < DefaultTelemetryMotorCount; ++index)
     {
         motorTelemetryViewModels.push_back(
-            std::make_unique<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>());
+            std::make_unique<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>(
+                MotorTelemetryLabels.at(index),
+                MotorTelemetryFillFromTop.at(index)));
         motorTelemetryViewModelList.push_back(QVariant::fromValue(static_cast<QObject*>(motorTelemetryViewModels.back().get())));
     }
 

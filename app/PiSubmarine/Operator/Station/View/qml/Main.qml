@@ -60,6 +60,29 @@ ApplicationWindow {
                 }
             }
 
+            Grid {
+                z: 3
+                anchors.left: parent.left
+                anchors.leftMargin: 24
+                anchors.verticalCenter: parent.verticalCenter
+                columns: 2
+                rows: 2
+                rowSpacing: 16
+                columnSpacing: 16
+
+                Repeater {
+                    model: motorTelemetryViewModels
+
+                    delegate: Loader {
+                        required property var modelData
+
+                        source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
+
+                        onLoaded: item.viewModel = modelData
+                    }
+                }
+            }
+
             Rectangle {
                 z: 4
                 anchors.fill: parent
@@ -113,19 +136,6 @@ ApplicationWindow {
                 Loader {
                     Layout.fillWidth: true
                     source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastPanel.qml"
-                }
-
-                Repeater {
-                    model: motorTelemetryViewModels
-
-                    delegate: Loader {
-                        required property var modelData
-
-                        Layout.fillWidth: true
-                        source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
-
-                        onLoaded: item.viewModel = modelData
-                    }
                 }
 
                 Loader {
