@@ -15,7 +15,7 @@ Rectangle {
             alphaValue)
     }
 
-    implicitWidth: 118
+    implicitWidth: 64
     implicitHeight: 110
     radius: 12
     color: viewModel !== null ? alphaColor(viewModel.primaryColor, 0.35) : "#553b82b6"
@@ -41,6 +41,8 @@ Rectangle {
 
         Label {
             text: viewModel !== null ? viewModel.panelLabel : "Motor"
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
             color: "#eef7ff"
             font.pixelSize: 14
             font.bold: true
@@ -51,7 +53,7 @@ Rectangle {
         }
 
         GridLayout {
-            columns: 3
+            columns: 2
             columnSpacing: 6
             rowSpacing: 4
 

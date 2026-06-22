@@ -67,8 +67,8 @@ ApplicationWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 columns: 2
                 rows: 2
-                rowSpacing: 16
-                columnSpacing: 16
+                rowSpacing: 8
+                columnSpacing: 8
 
                 Repeater {
                     model: motorTelemetryViewModels

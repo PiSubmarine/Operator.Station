@@ -410,10 +410,10 @@ int main(int argc, char* argv[])
     QVariantList motorTelemetryViewModelList;
     QVariantList videoOverlayViewModelList;
     constexpr std::array MotorTelemetryLabels{
-        "Front Left",
-        "Front Right",
-        "Rear Left",
-        "Rear Right"};
+        "FL",
+        "FR",
+        "RL",
+        "RR"};
     constexpr std::array MotorTelemetryFillFromTop{
         false,
         false,
