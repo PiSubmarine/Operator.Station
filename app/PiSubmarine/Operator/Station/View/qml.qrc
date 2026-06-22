@@ -7,6 +7,7 @@
         <file alias="Telemetry/View/Battery/BatteryPanel.qml">../Telemetry/View/Battery/BatteryPanel.qml</file>
         <file alias="Telemetry/View/Depth/DepthOverlayRow.qml">../Telemetry/View/Depth/DepthOverlayRow.qml</file>
         <file alias="Telemetry/View/Lamp/LampPanel.qml">../Telemetry/View/Lamp/LampPanel.qml</file>
+        <file alias="Telemetry/View/Lamp/LampOverlayPanel.qml">../Telemetry/View/Lamp/LampOverlayPanel.qml</file>
         <file alias="Telemetry/View/Motor/MotorPanel.qml">../Telemetry/View/Motor/MotorPanel.qml</file>
         <file alias="Telemetry/View/Proximity/ProximityOverlayRow.qml">../Telemetry/View/Proximity/ProximityOverlayRow.qml</file>
         <file alias="Telemetry/View/Time/TimePanel.qml">../Telemetry/View/Time/TimePanel.qml</file>

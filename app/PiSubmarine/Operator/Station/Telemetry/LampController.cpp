@@ -23,8 +23,12 @@ namespace PiSubmarine::Operator::Station::Telemetry
             m_HasSnapshot = true;
             emit SnapshotChanged(
                 static_cast<double>(m_LastStatus.Intensity),
-                m_LastStatus.HasAnyFault(),
-                m_LastStatus.HasAnyWarning());
+                m_LastStatus.HasOvercurrentFault,
+                m_LastStatus.HasOvertemperatureShutdownFault,
+                m_LastStatus.HasOvertemperatureWarning,
+                m_LastStatus.HasUndervoltageFault,
+                m_LastStatus.HasOvervoltageFault,
+                m_LastStatus.HasOpenLoadFault);
         }
     }
 }

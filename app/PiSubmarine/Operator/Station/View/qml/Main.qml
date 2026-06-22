@@ -112,6 +112,10 @@ ApplicationWindow {
                         }
                     }
                 }
+
+                Loader {
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Lamp/LampOverlayPanel.qml"
+                }
             }
 
             Rectangle {
@@ -152,11 +156,6 @@ ApplicationWindow {
                 Loader {
                     Layout.fillWidth: true
                     source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastPanel.qml"
-                }
-
-                Loader {
-                    Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Lamp/LampPanel.qml"
                 }
 
                 Loader {
