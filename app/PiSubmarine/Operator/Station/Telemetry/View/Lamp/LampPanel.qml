@@ -13,7 +13,8 @@ Rectangle {
         spacing: 8
 
         Label { text: "Lamp"; color: "#dbefff"; font.pixelSize: 22 }
-        Label { text: lampTelemetryViewModel.isActive ? "Active" : "Idle"; color: "#c0d7e7" }
+        Label { text: lampTelemetryViewModel.intensity > 0 ? "Active" : "Idle"; color: "#c0d7e7" }
+        Label { text: "Intensity: " + Math.round(lampTelemetryViewModel.intensity * 100) + "%"; color: "#c0d7e7" }
         Label { text: lampTelemetryViewModel.hasFault ? "Fault detected" : "No faults"; color: lampTelemetryViewModel.hasFault ? "#ff8f70" : "#c0d7e7" }
         Label { text: lampTelemetryViewModel.hasWarning ? "Warning present" : "No warnings"; color: lampTelemetryViewModel.hasWarning ? "#ffd166" : "#c0d7e7" }
     }

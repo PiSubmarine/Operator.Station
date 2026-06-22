@@ -16,7 +16,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         void Refresh();
 
     signals:
-        void SnapshotChanged(bool isActive, bool hasFault, bool hasWarning);
+        void SnapshotChanged(double intensity, bool hasFault, bool hasWarning);
 
     private:
         ::PiSubmarine::Lamp::Telemetry::Api::IProvider& m_Provider;

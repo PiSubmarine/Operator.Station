@@ -8,25 +8,25 @@ namespace PiSubmarine::Operator::Station::Telemetry::View::Lamp
     {
         Q_OBJECT
 
-        Q_PROPERTY(bool isActive READ IsActive NOTIFY SnapshotChanged)
+        Q_PROPERTY(double intensity READ Intensity NOTIFY SnapshotChanged)
         Q_PROPERTY(bool hasFault READ HasFault NOTIFY SnapshotChanged)
         Q_PROPERTY(bool hasWarning READ HasWarning NOTIFY SnapshotChanged)
 
     public:
         explicit ViewModel(QObject* parent = nullptr);
 
-        [[nodiscard]] bool IsActive() const;
+        [[nodiscard]] double Intensity() const;
         [[nodiscard]] bool HasFault() const;
         [[nodiscard]] bool HasWarning() const;
 
     public slots:
-        void SetSnapshot(bool isActive, bool hasFault, bool hasWarning);
+        void SetSnapshot(double intensity, bool hasFault, bool hasWarning);
 
     signals:
         void SnapshotChanged();
 
     private:
-        bool m_IsActive = false;
+        double m_Intensity = 0.0;
         bool m_HasFault = false;
         bool m_HasWarning = false;
     };

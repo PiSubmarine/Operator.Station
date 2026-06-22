@@ -11,7 +11,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
             {
                 ++m_Tick;
                 return ::PiSubmarine::Lamp::Telemetry::Api::Status{
-                    .IsActive = (m_Tick / 10) % 2 == 0,
+                    .Intensity = (m_Tick / 10) % 2 == 0 ? NormalizedFraction{0.8} : NormalizedFraction{0},
                     .HasOvertemperatureWarning = (m_Tick / 25) % 2 == 1};
             }
 

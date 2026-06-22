@@ -21,7 +21,10 @@ namespace PiSubmarine::Operator::Station::Telemetry
         {
             m_LastStatus = *statusResult;
             m_HasSnapshot = true;
-            emit SnapshotChanged(m_LastStatus.IsActive, m_LastStatus.HasAnyFault(), m_LastStatus.HasAnyWarning());
+            emit SnapshotChanged(
+                static_cast<double>(m_LastStatus.Intensity),
+                m_LastStatus.HasAnyFault(),
+                m_LastStatus.HasAnyWarning());
         }
     }
 }
