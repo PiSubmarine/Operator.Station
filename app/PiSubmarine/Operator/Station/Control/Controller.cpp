@@ -23,15 +23,47 @@ namespace PiSubmarine::Operator::Station::Control
     {
     }
 
+    double Controller::ClampLampIntensity(const double value)
+    {
+        return std::clamp(value, 0.0, 1.0);
+    }
+
+    double Controller::ReadLampAxisIntensity() const
+    {
+        if (m_LampAxis == nullptr)
+        {
+            return 0.0;
+        }
+
+        return ClampLampIntensity((static_cast<double>(m_LampAxis->GetValue()) + 1.0) * 0.5);
+    }
+
     void Controller::Tick(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&)
     {
-        const double surge = m_SurgeAxis != nullptr ? static_cast<double>(m_SurgeAxis->GetValue()) : m_ManualSurge;
-        const double yaw = m_YawAxis != nullptr ? static_cast<double>(m_YawAxis->GetValue()) : m_ManualYaw;
-        const double ballast = m_BallastAxis != nullptr ? ((static_cast<double>(m_BallastAxis->GetValue()) + 1.0) * 0.5) : m_ManualBallast;
-        const double lampIntensity = m_LampAxis != nullptr ? ((static_cast<double>(m_LampAxis->GetValue()) + 1.0) * 0.5) : m_ManualLampIntensity;
+        if (m_LampAxis != nullptr)
+        {
+            const auto lampAxisIntensity = ReadLampAxisIntensity();
+            if (!m_HasLampAxisSnapshot || lampAxisIntensity != m_LastLampAxisIntensity)
+            {
+                m_LastLampAxisIntensity = lampAxisIntensity;
+                m_HasLampAxisSnapshot = true;
+                m_LastLampInputSource = LampInputSource::Axis;
+
+                if (m_DesiredLampIntensity != lampAxisIntensity)
+                {
+                    m_DesiredLampIntensity = lampAxisIntensity;
+                    emit LampIntentChanged(m_DesiredLampIntensity);
+                }
+            }
+        }
+
+        const double surge = m_SurgeAxis != nullptr ? static_cast<double>(m_SurgeAxis->GetValue()) : 0.0;
+        const double yaw = m_YawAxis != nullptr ? static_cast<double>(m_YawAxis->GetValue()) : 0.0;
+        const double ballast = m_BallastAxis != nullptr ? ((static_cast<double>(m_BallastAxis->GetValue()) + 1.0) * 0.5) : 0.5;
+        const double lampIntensity = m_DesiredLampIntensity;
         const bool holdPosition = m_HoldPositionKey != nullptr
             ? m_HoldPositionKey->GetState() == ::PiSubmarine::Input::Api::KeyState::Pressed
-            : m_ManualHoldPosition;
+            : false;
 
         const auto horizontalResult = ::PiSubmarine::Control::Horizontal::Api::Command::Create(
             SignedNormalizedFraction(surge),
@@ -59,18 +91,17 @@ namespace PiSubmarine::Operator::Station::Control
         }
     }
 
-    void Controller::SubmitIntent(
-        const double surge,
-        const double yaw,
-        const double ballast,
-        const double lampIntensity,
-        const bool holdPosition)
+    void Controller::LampChangeIntensity(const double step)
     {
-        m_ManualSurge = surge;
-        m_ManualYaw = yaw;
-        m_ManualBallast = ballast;
-        m_ManualLampIntensity = lampIntensity;
-        m_ManualHoldPosition = holdPosition;
+        const auto nextLampIntensity = ClampLampIntensity(m_DesiredLampIntensity + step);
+        if (m_DesiredLampIntensity == nextLampIntensity && m_LastLampInputSource == LampInputSource::Ui)
+        {
+            return;
+        }
+
+        m_DesiredLampIntensity = nextLampIntensity;
+        m_LastLampInputSource = LampInputSource::Ui;
+        emit LampIntentChanged(m_DesiredLampIntensity);
     }
 
     void Controller::SetSurgeAxis(::PiSubmarine::Input::Api::IAxis* axis)
@@ -94,6 +125,7 @@ namespace PiSubmarine::Operator::Station::Control
     void Controller::SetLampAxis(::PiSubmarine::Input::Api::IAxis* axis)
     {
         m_LampAxis = axis;
+        m_HasLampAxisSnapshot = false;
         SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Lamp'");
     }
 

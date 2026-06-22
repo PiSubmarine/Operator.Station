@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 
@@ -31,14 +32,26 @@ namespace PiSubmarine::Operator::Station::Control
         void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
     public slots:
-        void SubmitIntent(double surge, double yaw, double ballast, double lampIntensity, bool holdPosition);
+        void LampChangeIntensity(double step);
         void SetSurgeAxis(::PiSubmarine::Input::Api::IAxis* axis);
         void SetYawAxis(::PiSubmarine::Input::Api::IAxis* axis);
         void SetBallastAxis(::PiSubmarine::Input::Api::IAxis* axis);
         void SetLampAxis(::PiSubmarine::Input::Api::IAxis* axis);
         void SetHoldPositionKey(::PiSubmarine::Input::Api::IKey* key);
 
+    signals:
+        void LampIntentChanged(double lampIntensity);
+
     private:
+        enum class LampInputSource
+        {
+            Ui,
+            Axis
+        };
+
+        [[nodiscard]] static double ClampLampIntensity(double value);
+        [[nodiscard]] double ReadLampAxisIntensity() const;
+
         ::PiSubmarine::Control::Api::Input::ISink& m_Sink;
         std::shared_ptr<spdlog::logger> m_Logger;
         ::PiSubmarine::Input::Api::IAxis* m_SurgeAxis = nullptr;
@@ -46,10 +59,9 @@ namespace PiSubmarine::Operator::Station::Control
         ::PiSubmarine::Input::Api::IAxis* m_BallastAxis = nullptr;
         ::PiSubmarine::Input::Api::IAxis* m_LampAxis = nullptr;
         ::PiSubmarine::Input::Api::IKey* m_HoldPositionKey = nullptr;
-        double m_ManualSurge = 0.0;
-        double m_ManualYaw = 0.0;
-        double m_ManualBallast = 0.5;
-        double m_ManualLampIntensity = 0.0;
-        bool m_ManualHoldPosition = false;
+        double m_DesiredLampIntensity = 0.0;
+        double m_LastLampAxisIntensity = 0.0;
+        bool m_HasLampAxisSnapshot = false;
+        LampInputSource m_LastLampInputSource = LampInputSource::Ui;
     };
 }

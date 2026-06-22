@@ -762,9 +762,15 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
     QObject::connect(
         &controlViewModel,
-        &PiSubmarine::Operator::Station::Control::View::ViewModel::IntentUpdated,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::LampChangeRequested,
         controlController.get(),
-        &PiSubmarine::Operator::Station::Control::Controller::SubmitIntent,
+        &PiSubmarine::Operator::Station::Control::Controller::LampChangeIntensity,
+        Qt::QueuedConnection);
+    QObject::connect(
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::LampIntentChanged,
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::SetLampIntensity,
         Qt::QueuedConnection);
     QObject::connect(
         &inputBindingViewModel,

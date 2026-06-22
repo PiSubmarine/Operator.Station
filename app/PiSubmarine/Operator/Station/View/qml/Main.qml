@@ -9,16 +9,12 @@ ApplicationWindow {
     color: "#08111a"
     title: "PiSubmarine Operator Station"
 
-    RowLayout {
+    Item {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 16
 
         Rectangle {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-            Layout.minimumWidth: 320
-            Layout.preferredWidth: 1000
+            anchors.fill: parent
+            anchors.margins: 16
             color: "#03070b"
             radius: 20
             border.color: "#163348"
@@ -122,6 +118,14 @@ ApplicationWindow {
                 }
             }
 
+            Loader {
+                z: 3
+                anchors.right: parent.right
+                anchors.rightMargin: 24
+                anchors.verticalCenter: parent.verticalCenter
+                source: "qrc:/PiSubmarine/Operator/Station/Control/View/LampControlOverlay.qml"
+            }
+
             Rectangle {
                 z: 4
                 anchors.fill: parent
@@ -142,24 +146,6 @@ ApplicationWindow {
                     acceptedButtons: Qt.LeftButton
                     gesturePolicy: TapHandler.ReleaseWithinBounds
                     onTapped: function(eventPoint) { eventPoint.accepted = false }
-                }
-            }
-        }
-
-        ScrollView {
-            Layout.preferredWidth: 380
-            Layout.minimumWidth: 380
-            Layout.maximumWidth: 380
-            Layout.fillHeight: true
-            clip: true
-
-            ColumnLayout {
-                width: 380
-                spacing: 16
-
-                Loader {
-                    Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/ControlPanel.qml"
                 }
             }
         }
