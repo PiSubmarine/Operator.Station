@@ -4,6 +4,7 @@
         <file alias="View/OverlayContainer.qml">qml/OverlayContainer.qml</file>
         <file alias="View/WindowsVideoSurface.qml">qml/WindowsVideoSurface.qml</file>
         <file alias="Telemetry/View/Ballast/BallastPanel.qml">../Telemetry/View/Ballast/BallastPanel.qml</file>
+        <file alias="Telemetry/View/Ballast/BallastOverlayRow.qml">../Telemetry/View/Ballast/BallastOverlayRow.qml</file>
         <file alias="Telemetry/View/Battery/BatteryPanel.qml">../Telemetry/View/Battery/BatteryPanel.qml</file>
         <file alias="Telemetry/View/Depth/DepthOverlayRow.qml">../Telemetry/View/Depth/DepthOverlayRow.qml</file>
         <file alias="Telemetry/View/Lamp/LampPanel.qml">../Telemetry/View/Lamp/LampPanel.qml</file>

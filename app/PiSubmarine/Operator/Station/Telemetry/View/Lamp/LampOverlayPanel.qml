@@ -122,12 +122,6 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
-            Label {
-                text: Math.round(lampTelemetryViewModel.intensity * 100) + "%"
-                color: "#eef7ff"
-                font.pixelSize: 14
-                font.bold: true
-            }
         }
 
         Item {

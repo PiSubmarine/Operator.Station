@@ -96,7 +96,7 @@ ApplicationWindow {
                     border.color: "#2d617a"
                     border.width: 1
                     implicitWidth: 160
-                    implicitHeight: 76
+                    implicitHeight: 104
 
                     Column {
                         anchors.fill: parent
@@ -109,6 +109,10 @@ ApplicationWindow {
 
                         Loader {
                             source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthOverlayRow.qml"
+                        }
+
+                        Loader {
+                            source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastOverlayRow.qml"
                         }
                     }
                 }
@@ -152,11 +156,6 @@ ApplicationWindow {
             ColumnLayout {
                 width: 380
                 spacing: 16
-
-                Loader {
-                    Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastPanel.qml"
-                }
 
                 Loader {
                     Layout.fillWidth: true
