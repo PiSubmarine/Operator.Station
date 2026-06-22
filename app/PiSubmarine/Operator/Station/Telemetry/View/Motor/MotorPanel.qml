@@ -71,7 +71,7 @@ Rectangle {
         return Qt.rgba(colorValue.r, colorValue.g, colorValue.b, alphaValue)
     }
 
-    implicitWidth: 64
+    implicitWidth: 76
     implicitHeight: 110
     radius: 12
     color: alphaColor(displayedPrimaryColor, 0.35)
