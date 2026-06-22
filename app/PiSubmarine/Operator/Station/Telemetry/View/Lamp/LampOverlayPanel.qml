@@ -45,8 +45,8 @@ Rectangle {
         }
     }
 
-    implicitWidth: 76
-    implicitHeight: 118
+    implicitWidth: 80
+    implicitHeight: 100
     radius: 12
     color: "#f0091823"
     border.color: "#2d617a"
