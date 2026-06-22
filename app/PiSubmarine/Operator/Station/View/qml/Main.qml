@@ -89,6 +89,29 @@ ApplicationWindow {
                         }
                     }
                 }
+
+                Rectangle {
+                    color: "#f0091823"
+                    radius: 16
+                    border.color: "#2d617a"
+                    border.width: 1
+                    implicitWidth: 160
+                    implicitHeight: 76
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 6
+
+                        Loader {
+                            source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityOverlayRow.qml"
+                        }
+
+                        Loader {
+                            source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthOverlayRow.qml"
+                        }
+                    }
+                }
             }
 
             Rectangle {
@@ -125,16 +148,6 @@ ApplicationWindow {
             ColumnLayout {
                 width: 380
                 spacing: 16
-
-                Loader {
-                    Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthPanel.qml"
-                }
-
-                Loader {
-                    Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityPanel.qml"
-                }
 
                 Loader {
                     Layout.fillWidth: true

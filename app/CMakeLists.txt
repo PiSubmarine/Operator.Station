@@ -149,7 +149,6 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Battery/ViewModel.h
-        PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Depth/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Depth/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Lamp/LampPanel.qml
@@ -158,7 +157,6 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Motor/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Motor/ViewModel.h
-        PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityPanel.qml
         PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Time/TimePanel.qml
