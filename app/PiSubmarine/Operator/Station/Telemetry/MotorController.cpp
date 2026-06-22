@@ -35,7 +35,9 @@ namespace PiSubmarine::Operator::Station::Telemetry
             emit SnapshotChanged(
                 ToQString(m_LastState.Operational),
                 HasAnyBits(m_LastState.ActiveFaults),
-                HasAnyBits(m_LastState.ActiveWarnings));
+                HasAnyBits(m_LastState.ActiveWarnings),
+                ToQString(m_LastState.Direction),
+                static_cast<double>(m_LastState.DriveEffort) * 100.0);
         }
     }
 
@@ -49,6 +51,21 @@ namespace PiSubmarine::Operator::Station::Telemetry
             return "Degraded";
         case ::PiSubmarine::Motor::Telemetry::Api::OperationalState::Faulted:
             return "Faulted";
+        }
+
+        return "Unknown";
+    }
+
+    QString MotorController::ToQString(const ::PiSubmarine::Motor::Telemetry::Api::DriveDirection direction)
+    {
+        switch (direction)
+        {
+        case ::PiSubmarine::Motor::Telemetry::Api::DriveDirection::Reverse:
+            return "Reverse";
+        case ::PiSubmarine::Motor::Telemetry::Api::DriveDirection::Idle:
+            return "Idle";
+        case ::PiSubmarine::Motor::Telemetry::Api::DriveDirection::Forward:
+            return "Forward";
         }
 
         return "Unknown";

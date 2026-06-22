@@ -16,10 +16,16 @@ namespace PiSubmarine::Operator::Station::Telemetry
         void Refresh();
 
     signals:
-        void SnapshotChanged(const QString& operationalState, bool hasFault, bool hasWarning);
+        void SnapshotChanged(
+            const QString& operationalState,
+            bool hasFault,
+            bool hasWarning,
+            const QString& direction,
+            double driveEffortPercent);
 
     private:
         [[nodiscard]] static QString ToQString(::PiSubmarine::Motor::Telemetry::Api::OperationalState state);
+        [[nodiscard]] static QString ToQString(::PiSubmarine::Motor::Telemetry::Api::DriveDirection direction);
 
         ::PiSubmarine::Motor::Telemetry::Api::IProvider& m_Provider;
         ::PiSubmarine::Motor::Telemetry::Api::State m_LastState{};

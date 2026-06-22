@@ -43,7 +43,15 @@ namespace PiSubmarine::Operator::Station::Telemetry
                         : static_cast<::PiSubmarine::Motor::Telemetry::Api::Faults>(0),
                     .ActiveWarnings = operational == ::PiSubmarine::Motor::Telemetry::Api::OperationalState::Degraded
                         ? ::PiSubmarine::Motor::Telemetry::Api::Warnings::Temperature
-                        : static_cast<::PiSubmarine::Motor::Telemetry::Api::Warnings>(0)};
+                        : static_cast<::PiSubmarine::Motor::Telemetry::Api::Warnings>(0),
+                    .Direction = operational == ::PiSubmarine::Motor::Telemetry::Api::OperationalState::Faulted
+                        ? ::PiSubmarine::Motor::Telemetry::Api::DriveDirection::Idle
+                        : ::PiSubmarine::Motor::Telemetry::Api::DriveDirection::Forward,
+                    .DriveEffort = operational == ::PiSubmarine::Motor::Telemetry::Api::OperationalState::Operational
+                        ? NormalizedFraction{0.8}
+                        : operational == ::PiSubmarine::Motor::Telemetry::Api::OperationalState::Degraded
+                            ? NormalizedFraction{0.45}
+                            : NormalizedFraction{0}};
             }
 
         private:

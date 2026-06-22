@@ -7,7 +7,7 @@ Rectangle {
     color: "#112332"
     radius: 18
     border.color: "#1f475f"
-    implicitHeight: 120
+    implicitHeight: 160
 
     Column {
         anchors.fill: parent
@@ -16,6 +16,18 @@ Rectangle {
 
         Label { text: "Motor"; color: "#dbefff"; font.pixelSize: 22 }
         Label { text: viewModel !== null ? viewModel.operationalState : "Unknown"; color: "#c0d7e7" }
+        Label {
+            text: viewModel !== null
+                ? `Direction: ${viewModel.direction}`
+                : "Direction: Unknown"
+            color: "#c0d7e7"
+        }
+        Label {
+            text: viewModel !== null
+                ? `Effort: ${viewModel.driveEffortPercent.toFixed(0)}%`
+                : "Effort: 0%"
+            color: "#c0d7e7"
+        }
         Label {
             text: viewModel !== null && viewModel.hasFault ? "Fault detected" : "No faults"
             color: viewModel !== null && viewModel.hasFault ? "#ff8f70" : "#c0d7e7"
