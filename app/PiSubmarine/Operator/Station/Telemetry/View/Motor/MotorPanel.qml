@@ -7,6 +7,22 @@ Rectangle {
 
     property QtObject viewModel: null
     property int lingerDuration: 1200
+    property color neutralPrimaryColor: "#3b82b6"
+    property color targetPrimaryColor: viewModel !== null ? viewModel.primaryColor : neutralPrimaryColor
+    property color displayedPrimaryColor: targetPrimaryColor
+
+    function updateDisplayedPrimaryColor() {
+        if (targetPrimaryColor === neutralPrimaryColor) {
+            fadePrimaryColor.stop()
+            fadePrimaryColor.from = displayedPrimaryColor
+            fadePrimaryColor.to = neutralPrimaryColor
+            fadePrimaryColor.start()
+            return
+        }
+
+        fadePrimaryColor.stop()
+        displayedPrimaryColor = targetPrimaryColor
+    }
 
     component IndicatorLabel: Label {
         id: indicator
@@ -51,27 +67,40 @@ Rectangle {
         }
     }
 
-    function alphaColor(hexColor, alphaValue) {
-        return Qt.rgba(
-            parseInt(hexColor.slice(1, 3), 16) / 255.0,
-            parseInt(hexColor.slice(3, 5), 16) / 255.0,
-            parseInt(hexColor.slice(5, 7), 16) / 255.0,
-            alphaValue)
+    function alphaColor(colorValue, alphaValue) {
+        return Qt.rgba(colorValue.r, colorValue.g, colorValue.b, alphaValue)
     }
 
     implicitWidth: 64
     implicitHeight: 110
     radius: 12
-    color: viewModel !== null ? alphaColor(viewModel.primaryColor, 0.35) : "#553b82b6"
-    border.color: viewModel !== null ? alphaColor(viewModel.primaryColor, 0.85) : "#aa3b82b6"
+    color: alphaColor(displayedPrimaryColor, 0.35)
+    border.color: alphaColor(displayedPrimaryColor, 0.85)
     border.width: 1
     clip: true
+
+    Component.onCompleted: {
+        displayedPrimaryColor = targetPrimaryColor
+    }
+
+    onTargetPrimaryColorChanged: {
+        updateDisplayedPrimaryColor()
+    }
+
+    ColorAnimation {
+        id: fadePrimaryColor
+
+        target: root
+        property: "displayedPrimaryColor"
+        duration: root.lingerDuration
+        easing.type: Easing.OutCubic
+    }
 
     Rectangle {
         width: parent.width
         height: parent.height * (viewModel !== null ? Math.max(0.0, Math.min(1.0, viewModel.driveEffortPercent / 100.0)) : 0.0)
         radius: root.radius
-        color: viewModel !== null ? viewModel.primaryColor : "#3b82b6"
+        color: displayedPrimaryColor
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: viewModel !== null && viewModel.fillFromTop ? parent.top : undefined
