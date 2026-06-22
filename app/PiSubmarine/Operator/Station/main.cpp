@@ -767,10 +767,64 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Control::Controller::LampChangeIntensity,
         Qt::QueuedConnection);
     QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::CameraEnableRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::EnableCamera,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::CameraDisableRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::DisableCamera,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::AutoFocusRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetAutoFocusEnabled,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::ManualFocusRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetManualFocusEnabled,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::ManualFocusPositionRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetManualFocusPosition,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::LowQualityProfileRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetLowQualityStreamProfile,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::MediumQualityProfileRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetMediumQualityStreamProfile,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::HighQualityProfileRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetHighQualityStreamProfile,
+        Qt::QueuedConnection);
+    QObject::connect(
         controlController.get(),
         &PiSubmarine::Operator::Station::Control::Controller::LampIntentChanged,
         &controlViewModel,
         &PiSubmarine::Operator::Station::Control::View::ViewModel::SetLampIntensity,
+        Qt::QueuedConnection);
+    QObject::connect(
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::CameraIntentChanged,
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::SetCameraIntent,
         Qt::QueuedConnection);
     QObject::connect(
         &inputBindingViewModel,

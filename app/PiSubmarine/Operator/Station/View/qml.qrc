@@ -13,6 +13,7 @@
         <file alias="Telemetry/View/Proximity/ProximityOverlayRow.qml">../Telemetry/View/Proximity/ProximityOverlayRow.qml</file>
         <file alias="Telemetry/View/Time/TimePanel.qml">../Telemetry/View/Time/TimePanel.qml</file>
         <file alias="Telemetry/View/Video/VideoPanel.qml">../Telemetry/View/Video/VideoPanel.qml</file>
+        <file alias="Control/View/CameraControlOverlay.qml">../Control/View/CameraControlOverlay.qml</file>
         <file alias="Control/View/LampControlOverlay.qml">../Control/View/LampControlOverlay.qml</file>
         <file alias="Control/View/StatusPanel.qml">../Control/View/StatusPanel.qml</file>
         <file alias="Input/View/BindingPanel.qml">../Input/View/BindingPanel.qml</file>

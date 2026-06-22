@@ -9,6 +9,7 @@
 #include "PiSubmarine/Input/Api/IAxis.h"
 #include "PiSubmarine/Input/Api/IKey.h"
 #include "PiSubmarine/Control/Api/Input/ISink.h"
+#include "PiSubmarine/Control/Video/Api/Command.h"
 #include "PiSubmarine/Logging/Api/IFactory.h"
 #include "PiSubmarine/Time/ITickable.h"
 
@@ -41,6 +42,7 @@ namespace PiSubmarine::Operator::Station::Control
 
     signals:
         void LampIntentChanged(double lampIntensity);
+        void CameraIntentChanged(bool isEnabled, bool isAutoFocus, double focusPosition, int streamProfile);
 
     private:
         enum class LampInputSource
@@ -50,6 +52,7 @@ namespace PiSubmarine::Operator::Station::Control
         };
 
         [[nodiscard]] static double ClampLampIntensity(double value);
+        [[nodiscard]] static double ClampNormalizedValue(double value);
         [[nodiscard]] double ReadLampAxisIntensity() const;
 
         ::PiSubmarine::Control::Api::Input::ISink& m_Sink;
@@ -63,5 +66,21 @@ namespace PiSubmarine::Operator::Station::Control
         double m_LastLampAxisIntensity = 0.0;
         bool m_HasLampAxisSnapshot = false;
         LampInputSource m_LastLampInputSource = LampInputSource::Ui;
+        bool m_IsCameraEnabled = true;
+        bool m_IsAutoFocusEnabled = true;
+        double m_ManualFocusPosition = 0.5;
+        ::PiSubmarine::Control::Video::Api::StreamProfile m_StreamProfile =
+            ::PiSubmarine::Control::Video::Api::StreamProfile::Standard;
+        bool m_HasPublishedCameraIntent = false;
+
+    public slots:
+        void EnableCamera();
+        void DisableCamera();
+        void SetAutoFocusEnabled();
+        void SetManualFocusEnabled();
+        void SetManualFocusPosition(double position);
+        void SetLowQualityStreamProfile();
+        void SetMediumQualityStreamProfile();
+        void SetHighQualityStreamProfile();
     };
 }

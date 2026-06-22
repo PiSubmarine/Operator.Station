@@ -118,12 +118,20 @@ ApplicationWindow {
                 }
             }
 
-            Loader {
+            Column {
                 z: 3
                 anchors.right: parent.right
                 anchors.rightMargin: 24
                 anchors.verticalCenter: parent.verticalCenter
-                source: "qrc:/PiSubmarine/Operator/Station/Control/View/LampControlOverlay.qml"
+                spacing: 12
+
+                Loader {
+                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/CameraControlOverlay.qml"
+                }
+
+                Loader {
+                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/LampControlOverlay.qml"
+                }
             }
 
             Rectangle {

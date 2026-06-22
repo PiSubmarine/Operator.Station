@@ -28,6 +28,11 @@ namespace PiSubmarine::Operator::Station::Control
         return std::clamp(value, 0.0, 1.0);
     }
 
+    double Controller::ClampNormalizedValue(const double value)
+    {
+        return std::clamp(value, 0.0, 1.0);
+    }
+
     double Controller::ReadLampAxisIntensity() const
     {
         if (m_LampAxis == nullptr)
@@ -80,9 +85,28 @@ namespace PiSubmarine::Operator::Station::Control
                 NormalizedFraction(ballast)),
             .LampIntensity = ::PiSubmarine::Control::Lamp::Api::Command::Create(
                 NormalizedFraction(lampIntensity)),
+            .VideoControl = m_IsCameraEnabled
+                ? std::optional(::PiSubmarine::Control::Video::Api::Command::Enable(
+                    m_StreamProfile,
+                    m_IsAutoFocusEnabled
+                        ? ::PiSubmarine::Control::Video::Api::FocusMode{::PiSubmarine::Control::Video::Api::AutoFocus{}}
+                        : ::PiSubmarine::Control::Video::Api::FocusMode{
+                            ::PiSubmarine::Control::Video::Api::ManualFocus{
+                                .Position = NormalizedFraction(m_ManualFocusPosition)}}))
+                : std::optional(::PiSubmarine::Control::Video::Api::Command::Disable()),
             .ModeRequest = holdPosition
                 ? std::optional(::PiSubmarine::Control::Api::Input::Mode::Request::HoldPositionValue())
                 : std::optional(::PiSubmarine::Control::Api::Input::Mode::Request::ManualValue())};
+
+        if (!m_HasPublishedCameraIntent)
+        {
+            m_HasPublishedCameraIntent = true;
+            emit CameraIntentChanged(
+                m_IsCameraEnabled,
+                m_IsAutoFocusEnabled,
+                m_ManualFocusPosition,
+                static_cast<int>(m_StreamProfile));
+        }
 
         const auto submitResult = m_Sink.Submit(command);
         if (!submitResult.has_value())
@@ -133,5 +157,94 @@ namespace PiSubmarine::Operator::Station::Control
     {
         m_HoldPositionKey = key;
         SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Hold Position'");
+    }
+
+    void Controller::EnableCamera()
+    {
+        if (m_IsCameraEnabled)
+        {
+            return;
+        }
+
+        m_IsCameraEnabled = true;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::DisableCamera()
+    {
+        if (!m_IsCameraEnabled)
+        {
+            return;
+        }
+
+        m_IsCameraEnabled = false;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::SetAutoFocusEnabled()
+    {
+        if (m_IsAutoFocusEnabled)
+        {
+            return;
+        }
+
+        m_IsAutoFocusEnabled = true;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::SetManualFocusEnabled()
+    {
+        if (!m_IsAutoFocusEnabled)
+        {
+            return;
+        }
+
+        m_IsAutoFocusEnabled = false;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::SetManualFocusPosition(const double position)
+    {
+        const auto nextPosition = ClampNormalizedValue(position);
+        if (m_ManualFocusPosition == nextPosition)
+        {
+            return;
+        }
+
+        m_ManualFocusPosition = nextPosition;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::SetLowQualityStreamProfile()
+    {
+        if (m_StreamProfile == ::PiSubmarine::Control::Video::Api::StreamProfile::LowLatency)
+        {
+            return;
+        }
+
+        m_StreamProfile = ::PiSubmarine::Control::Video::Api::StreamProfile::LowLatency;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::SetMediumQualityStreamProfile()
+    {
+        if (m_StreamProfile == ::PiSubmarine::Control::Video::Api::StreamProfile::Standard)
+        {
+            return;
+        }
+
+        m_StreamProfile = ::PiSubmarine::Control::Video::Api::StreamProfile::Standard;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::SetHighQualityStreamProfile()
+    {
+        if (m_StreamProfile == ::PiSubmarine::Control::Video::Api::StreamProfile::HighQuality)
+        {
+            return;
+        }
+
+        m_StreamProfile = ::PiSubmarine::Control::Video::Api::StreamProfile::HighQuality;
+        emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
     }
 }
