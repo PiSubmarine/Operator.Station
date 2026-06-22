@@ -7,7 +7,7 @@ Rectangle {
     radius: 16
     border.color: "#2d617a"
     border.width: 1
-    implicitWidth: 160
+    implicitWidth: 220
     implicitHeight: 96
 
     ColumnLayout {

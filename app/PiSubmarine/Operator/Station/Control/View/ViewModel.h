@@ -13,6 +13,10 @@ namespace PiSubmarine::Operator::Station::Control::View
         Q_PROPERTY(bool autoFocusEnabled READ GetAutoFocusEnabled NOTIFY CameraIntentChanged)
         Q_PROPERTY(double manualFocusPosition READ GetManualFocusPosition NOTIFY CameraIntentChanged)
         Q_PROPERTY(int streamProfile READ GetStreamProfile NOTIFY CameraIntentChanged)
+        Q_PROPERTY(bool holdPositionMode READ GetHoldPositionMode NOTIFY ModeIntentChanged)
+        Q_PROPERTY(int verticalMode READ GetVerticalMode NOTIFY VerticalIntentChanged)
+        Q_PROPERTY(double ballastPosition READ GetBallastPosition NOTIFY VerticalIntentChanged)
+        Q_PROPERTY(double depthTargetMeters READ GetDepthTargetMeters NOTIFY VerticalIntentChanged)
 
     public:
         explicit ViewModel(QObject* parent = nullptr);
@@ -22,6 +26,10 @@ namespace PiSubmarine::Operator::Station::Control::View
         [[nodiscard]] bool GetAutoFocusEnabled() const;
         [[nodiscard]] double GetManualFocusPosition() const;
         [[nodiscard]] int GetStreamProfile() const;
+        [[nodiscard]] bool GetHoldPositionMode() const;
+        [[nodiscard]] int GetVerticalMode() const;
+        [[nodiscard]] double GetBallastPosition() const;
+        [[nodiscard]] double GetDepthTargetMeters() const;
 
     signals:
         void LampIntensityChanged();
@@ -35,6 +43,13 @@ namespace PiSubmarine::Operator::Station::Control::View
         void LowQualityProfileRequested();
         void MediumQualityProfileRequested();
         void HighQualityProfileRequested();
+        void ModeIntentChanged();
+        void ManualModeRequested();
+        void HoldPositionModeRequested();
+        void VerticalIntentChanged();
+        void VerticalKeepCurrentRequested();
+        void VerticalBallastPositionRequested();
+        void VerticalDepthTargetRequested();
 
     public slots:
         void IncreaseLampIntensity();
@@ -49,6 +64,13 @@ namespace PiSubmarine::Operator::Station::Control::View
         void SetMediumQualityStreamProfile();
         void SetHighQualityStreamProfile();
         void SetCameraIntent(bool isEnabled, bool isAutoFocus, double focusPosition, int streamProfile);
+        void SetManualMode();
+        void SetHoldPositionMode();
+        void SetModeIntent(bool isHoldPosition);
+        void SetVerticalKeepCurrentMode();
+        void SetVerticalBallastPositionMode();
+        void SetVerticalDepthTargetMode();
+        void SetVerticalIntent(int verticalMode, double ballastPosition, double depthTargetMeters);
 
     private:
         double m_LampIntensity = 0.0;
@@ -56,5 +78,9 @@ namespace PiSubmarine::Operator::Station::Control::View
         bool m_AutoFocusEnabled = true;
         double m_ManualFocusPosition = 0.5;
         int m_StreamProfile = 1;
+        bool m_HoldPositionMode = false;
+        int m_VerticalMode = 1;
+        double m_BallastPosition = 0.5;
+        double m_DepthTargetMeters = 0.0;
     };
 }

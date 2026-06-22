@@ -130,6 +130,14 @@ ApplicationWindow {
                 }
 
                 Loader {
+                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/ModeControlOverlay.qml"
+                }
+
+                Loader {
+                    source: "qrc:/PiSubmarine/Operator/Station/Control/View/VerticalControlOverlay.qml"
+                }
+
+                Loader {
                     source: "qrc:/PiSubmarine/Operator/Station/Control/View/LampControlOverlay.qml"
                 }
             }

@@ -12,6 +12,10 @@ namespace PiSubmarine::Operator::Station::Control::View
     bool ViewModel::GetAutoFocusEnabled() const { return m_AutoFocusEnabled; }
     double ViewModel::GetManualFocusPosition() const { return m_ManualFocusPosition; }
     int ViewModel::GetStreamProfile() const { return m_StreamProfile; }
+    bool ViewModel::GetHoldPositionMode() const { return m_HoldPositionMode; }
+    int ViewModel::GetVerticalMode() const { return m_VerticalMode; }
+    double ViewModel::GetBallastPosition() const { return m_BallastPosition; }
+    double ViewModel::GetDepthTargetMeters() const { return m_DepthTargetMeters; }
 
     void ViewModel::IncreaseLampIntensity()
     {
@@ -92,5 +96,59 @@ namespace PiSubmarine::Operator::Station::Control::View
         m_ManualFocusPosition = focusPosition;
         m_StreamProfile = streamProfile;
         emit CameraIntentChanged();
+    }
+
+    void ViewModel::SetManualMode()
+    {
+        emit ManualModeRequested();
+    }
+
+    void ViewModel::SetHoldPositionMode()
+    {
+        emit HoldPositionModeRequested();
+    }
+
+    void ViewModel::SetModeIntent(const bool isHoldPosition)
+    {
+        if (m_HoldPositionMode == isHoldPosition)
+        {
+            return;
+        }
+
+        m_HoldPositionMode = isHoldPosition;
+        emit ModeIntentChanged();
+    }
+
+    void ViewModel::SetVerticalKeepCurrentMode()
+    {
+        emit VerticalKeepCurrentRequested();
+    }
+
+    void ViewModel::SetVerticalBallastPositionMode()
+    {
+        emit VerticalBallastPositionRequested();
+    }
+
+    void ViewModel::SetVerticalDepthTargetMode()
+    {
+        emit VerticalDepthTargetRequested();
+    }
+
+    void ViewModel::SetVerticalIntent(
+        const int verticalMode,
+        const double ballastPosition,
+        const double depthTargetMeters)
+    {
+        if (m_VerticalMode == verticalMode &&
+            m_BallastPosition == ballastPosition &&
+            m_DepthTargetMeters == depthTargetMeters)
+        {
+            return;
+        }
+
+        m_VerticalMode = verticalMode;
+        m_BallastPosition = ballastPosition;
+        m_DepthTargetMeters = depthTargetMeters;
+        emit VerticalIntentChanged();
     }
 }

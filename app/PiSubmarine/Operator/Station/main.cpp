@@ -815,6 +815,36 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Control::Controller::SetHighQualityStreamProfile,
         Qt::QueuedConnection);
     QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::ManualModeRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetManualMode,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::HoldPositionModeRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetHoldPositionMode,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::VerticalKeepCurrentRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetVerticalKeepCurrentMode,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::VerticalBallastPositionRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetVerticalBallastPositionMode,
+        Qt::QueuedConnection);
+    QObject::connect(
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::VerticalDepthTargetRequested,
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::SetVerticalDepthTargetMode,
+        Qt::QueuedConnection);
+    QObject::connect(
         controlController.get(),
         &PiSubmarine::Operator::Station::Control::Controller::LampIntentChanged,
         &controlViewModel,
@@ -825,6 +855,18 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Control::Controller::CameraIntentChanged,
         &controlViewModel,
         &PiSubmarine::Operator::Station::Control::View::ViewModel::SetCameraIntent,
+        Qt::QueuedConnection);
+    QObject::connect(
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::ModeIntentChanged,
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::SetModeIntent,
+        Qt::QueuedConnection);
+    QObject::connect(
+        controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::VerticalIntentChanged,
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::SetVerticalIntent,
         Qt::QueuedConnection);
     QObject::connect(
         &inputBindingViewModel,

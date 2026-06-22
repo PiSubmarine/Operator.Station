@@ -43,6 +43,16 @@ namespace PiSubmarine::Operator::Station::Control
         return ClampLampIntensity((static_cast<double>(m_LampAxis->GetValue()) + 1.0) * 0.5);
     }
 
+    double Controller::ReadBallastAxisPosition() const
+    {
+        if (m_BallastAxis == nullptr)
+        {
+            return m_DesiredBallastPosition;
+        }
+
+        return ClampNormalizedValue((static_cast<double>(m_BallastAxis->GetValue()) + 1.0) * 0.5);
+    }
+
     void Controller::Tick(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&)
     {
         if (m_LampAxis != nullptr)
@@ -62,13 +72,46 @@ namespace PiSubmarine::Operator::Station::Control
             }
         }
 
+        if (m_BallastAxis != nullptr)
+        {
+            const auto ballastAxisPosition = ReadBallastAxisPosition();
+            if (!m_HasBallastAxisSnapshot || ballastAxisPosition != m_LastBallastAxisPosition)
+            {
+                m_LastBallastAxisPosition = ballastAxisPosition;
+                m_HasBallastAxisSnapshot = true;
+
+                if (m_DesiredBallastPosition != ballastAxisPosition)
+                {
+                    m_DesiredBallastPosition = ballastAxisPosition;
+                    emit VerticalIntentChanged(
+                        static_cast<int>(m_VerticalMode),
+                        m_DesiredBallastPosition,
+                        m_DesiredDepthTargetMeters);
+                }
+            }
+        }
+
+        if (m_HoldPositionKey != nullptr)
+        {
+            const auto holdPositionPressed =
+                m_HoldPositionKey->GetState() == ::PiSubmarine::Input::Api::KeyState::Pressed;
+            if (!m_HasHoldPositionKeySnapshot || holdPositionPressed != m_LastHoldPositionKeyState)
+            {
+                m_LastHoldPositionKeyState = holdPositionPressed;
+                m_HasHoldPositionKeySnapshot = true;
+                m_LastModeInputSource = ModeInputSource::Key;
+
+                if (m_DesiredHoldPosition != holdPositionPressed)
+                {
+                    m_DesiredHoldPosition = holdPositionPressed;
+                    emit ModeIntentChanged(m_DesiredHoldPosition);
+                }
+            }
+        }
+
         const double surge = m_SurgeAxis != nullptr ? static_cast<double>(m_SurgeAxis->GetValue()) : 0.0;
         const double yaw = m_YawAxis != nullptr ? static_cast<double>(m_YawAxis->GetValue()) : 0.0;
-        const double ballast = m_BallastAxis != nullptr ? ((static_cast<double>(m_BallastAxis->GetValue()) + 1.0) * 0.5) : 0.5;
         const double lampIntensity = m_DesiredLampIntensity;
-        const bool holdPosition = m_HoldPositionKey != nullptr
-            ? m_HoldPositionKey->GetState() == ::PiSubmarine::Input::Api::KeyState::Pressed
-            : false;
 
         const auto horizontalResult = ::PiSubmarine::Control::Horizontal::Api::Command::Create(
             SignedNormalizedFraction(surge),
@@ -81,8 +124,13 @@ namespace PiSubmarine::Operator::Station::Control
 
         ::PiSubmarine::Control::Api::Input::OperatorCommand command{
             .Movement = *horizontalResult,
-            .VerticalControl = ::PiSubmarine::Control::Vertical::Api::Command::SetBallastPositionTo(
-                NormalizedFraction(ballast)),
+            .VerticalControl = m_VerticalMode == VerticalMode::KeepCurrent
+                ? ::PiSubmarine::Control::Vertical::Api::Command::KeepCurrentValue()
+                : m_VerticalMode == VerticalMode::SetBallastPosition
+                    ? ::PiSubmarine::Control::Vertical::Api::Command::SetBallastPositionTo(
+                        NormalizedFraction(m_DesiredBallastPosition))
+                    : ::PiSubmarine::Control::Vertical::Api::Command::SetDepthTargetTo(
+                        Meters{m_DesiredDepthTargetMeters}),
             .LampIntensity = ::PiSubmarine::Control::Lamp::Api::Command::Create(
                 NormalizedFraction(lampIntensity)),
             .VideoControl = m_IsCameraEnabled
@@ -94,7 +142,7 @@ namespace PiSubmarine::Operator::Station::Control
                             ::PiSubmarine::Control::Video::Api::ManualFocus{
                                 .Position = NormalizedFraction(m_ManualFocusPosition)}}))
                 : std::optional(::PiSubmarine::Control::Video::Api::Command::Disable()),
-            .ModeRequest = holdPosition
+            .ModeRequest = m_DesiredHoldPosition
                 ? std::optional(::PiSubmarine::Control::Api::Input::Mode::Request::HoldPositionValue())
                 : std::optional(::PiSubmarine::Control::Api::Input::Mode::Request::ManualValue())};
 
@@ -106,6 +154,21 @@ namespace PiSubmarine::Operator::Station::Control
                 m_IsAutoFocusEnabled,
                 m_ManualFocusPosition,
                 static_cast<int>(m_StreamProfile));
+        }
+
+        if (!m_HasPublishedModeIntent)
+        {
+            m_HasPublishedModeIntent = true;
+            emit ModeIntentChanged(m_DesiredHoldPosition);
+        }
+
+        if (!m_HasPublishedVerticalIntent)
+        {
+            m_HasPublishedVerticalIntent = true;
+            emit VerticalIntentChanged(
+                static_cast<int>(m_VerticalMode),
+                m_DesiredBallastPosition,
+                m_DesiredDepthTargetMeters);
         }
 
         const auto submitResult = m_Sink.Submit(command);
@@ -143,6 +206,7 @@ namespace PiSubmarine::Operator::Station::Control
     void Controller::SetBallastAxis(::PiSubmarine::Input::Api::IAxis* axis)
     {
         m_BallastAxis = axis;
+        m_HasBallastAxisSnapshot = false;
         SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Ballast'");
     }
 
@@ -156,6 +220,7 @@ namespace PiSubmarine::Operator::Station::Control
     void Controller::SetHoldPositionKey(::PiSubmarine::Input::Api::IKey* key)
     {
         m_HoldPositionKey = key;
+        m_HasHoldPositionKeySnapshot = false;
         SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Hold Position'");
     }
 
@@ -246,5 +311,71 @@ namespace PiSubmarine::Operator::Station::Control
 
         m_StreamProfile = ::PiSubmarine::Control::Video::Api::StreamProfile::HighQuality;
         emit CameraIntentChanged(m_IsCameraEnabled, m_IsAutoFocusEnabled, m_ManualFocusPosition, static_cast<int>(m_StreamProfile));
+    }
+
+    void Controller::SetManualMode()
+    {
+        if (!m_DesiredHoldPosition && m_LastModeInputSource == ModeInputSource::Ui)
+        {
+            return;
+        }
+
+        m_DesiredHoldPosition = false;
+        m_LastModeInputSource = ModeInputSource::Ui;
+        emit ModeIntentChanged(false);
+    }
+
+    void Controller::SetHoldPositionMode()
+    {
+        if (m_DesiredHoldPosition && m_LastModeInputSource == ModeInputSource::Ui)
+        {
+            return;
+        }
+
+        m_DesiredHoldPosition = true;
+        m_LastModeInputSource = ModeInputSource::Ui;
+        emit ModeIntentChanged(true);
+    }
+
+    void Controller::SetVerticalKeepCurrentMode()
+    {
+        if (m_VerticalMode == VerticalMode::KeepCurrent)
+        {
+            return;
+        }
+
+        m_VerticalMode = VerticalMode::KeepCurrent;
+        emit VerticalIntentChanged(
+            static_cast<int>(m_VerticalMode),
+            m_DesiredBallastPosition,
+            m_DesiredDepthTargetMeters);
+    }
+
+    void Controller::SetVerticalBallastPositionMode()
+    {
+        if (m_VerticalMode == VerticalMode::SetBallastPosition)
+        {
+            return;
+        }
+
+        m_VerticalMode = VerticalMode::SetBallastPosition;
+        emit VerticalIntentChanged(
+            static_cast<int>(m_VerticalMode),
+            m_DesiredBallastPosition,
+            m_DesiredDepthTargetMeters);
+    }
+
+    void Controller::SetVerticalDepthTargetMode()
+    {
+        if (m_VerticalMode == VerticalMode::SetDepthTarget)
+        {
+            return;
+        }
+
+        m_VerticalMode = VerticalMode::SetDepthTarget;
+        emit VerticalIntentChanged(
+            static_cast<int>(m_VerticalMode),
+            m_DesiredBallastPosition,
+            m_DesiredDepthTargetMeters);
     }
 }

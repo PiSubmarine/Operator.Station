@@ -43,6 +43,8 @@ namespace PiSubmarine::Operator::Station::Control
     signals:
         void LampIntentChanged(double lampIntensity);
         void CameraIntentChanged(bool isEnabled, bool isAutoFocus, double focusPosition, int streamProfile);
+        void ModeIntentChanged(bool isHoldPosition);
+        void VerticalIntentChanged(int verticalMode, double ballastPosition, double depthTargetMeters);
 
     private:
         enum class LampInputSource
@@ -51,9 +53,23 @@ namespace PiSubmarine::Operator::Station::Control
             Axis
         };
 
+        enum class ModeInputSource
+        {
+            Ui,
+            Key
+        };
+
+        enum class VerticalMode
+        {
+            KeepCurrent = 0,
+            SetBallastPosition = 1,
+            SetDepthTarget = 2
+        };
+
         [[nodiscard]] static double ClampLampIntensity(double value);
         [[nodiscard]] static double ClampNormalizedValue(double value);
         [[nodiscard]] double ReadLampAxisIntensity() const;
+        [[nodiscard]] double ReadBallastAxisPosition() const;
 
         ::PiSubmarine::Control::Api::Input::ISink& m_Sink;
         std::shared_ptr<spdlog::logger> m_Logger;
@@ -72,6 +88,17 @@ namespace PiSubmarine::Operator::Station::Control
         ::PiSubmarine::Control::Video::Api::StreamProfile m_StreamProfile =
             ::PiSubmarine::Control::Video::Api::StreamProfile::Standard;
         bool m_HasPublishedCameraIntent = false;
+        bool m_DesiredHoldPosition = false;
+        bool m_LastHoldPositionKeyState = false;
+        bool m_HasHoldPositionKeySnapshot = false;
+        ModeInputSource m_LastModeInputSource = ModeInputSource::Ui;
+        VerticalMode m_VerticalMode = VerticalMode::SetBallastPosition;
+        double m_DesiredBallastPosition = 0.5;
+        double m_LastBallastAxisPosition = 0.5;
+        bool m_HasBallastAxisSnapshot = false;
+        double m_DesiredDepthTargetMeters = 0.0;
+        bool m_HasPublishedModeIntent = false;
+        bool m_HasPublishedVerticalIntent = false;
 
     public slots:
         void EnableCamera();
@@ -82,5 +109,10 @@ namespace PiSubmarine::Operator::Station::Control
         void SetLowQualityStreamProfile();
         void SetMediumQualityStreamProfile();
         void SetHighQualityStreamProfile();
+        void SetManualMode();
+        void SetHoldPositionMode();
+        void SetVerticalKeepCurrentMode();
+        void SetVerticalBallastPositionMode();
+        void SetVerticalDepthTargetMode();
     };
 }
