@@ -7,22 +7,6 @@ Rectangle {
 
     property QtObject viewModel: null
     property int lingerDuration: 1200
-    property color neutralPrimaryColor: "#3b82b6"
-    property color targetPrimaryColor: viewModel !== null ? viewModel.primaryColor : neutralPrimaryColor
-    property color displayedPrimaryColor: targetPrimaryColor
-
-    function updateDisplayedPrimaryColor() {
-        if (targetPrimaryColor === neutralPrimaryColor) {
-            fadePrimaryColor.stop()
-            fadePrimaryColor.from = displayedPrimaryColor
-            fadePrimaryColor.to = neutralPrimaryColor
-            fadePrimaryColor.start()
-            return
-        }
-
-        fadePrimaryColor.stop()
-        displayedPrimaryColor = targetPrimaryColor
-    }
 
     component IndicatorLabel: Label {
         id: indicator
@@ -67,106 +51,73 @@ Rectangle {
         }
     }
 
-    function alphaColor(colorValue, alphaValue) {
-        return Qt.rgba(colorValue.r, colorValue.g, colorValue.b, alphaValue)
-    }
-
     implicitWidth: 76
-    implicitHeight: 110
+    implicitHeight: 118
     radius: 12
-    color: alphaColor(displayedPrimaryColor, 0.35)
-    border.color: alphaColor(displayedPrimaryColor, 0.85)
+    color: "#f0091823"
+    border.color: "#2d617a"
     border.width: 1
     clip: true
-
-    Component.onCompleted: {
-        displayedPrimaryColor = targetPrimaryColor
-    }
-
-    onTargetPrimaryColorChanged: {
-        updateDisplayedPrimaryColor()
-    }
-
-    ColorAnimation {
-        id: fadePrimaryColor
-
-        target: root
-        property: "displayedPrimaryColor"
-        duration: root.lingerDuration
-        easing.type: Easing.OutCubic
-    }
-
-    Rectangle {
-        width: parent.width
-        height: parent.height * (viewModel !== null ? Math.max(0.0, Math.min(1.0, viewModel.driveEffortPercent / 100.0)) : 0.0)
-        radius: root.radius
-        color: displayedPrimaryColor
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: viewModel !== null && viewModel.fillFromTop ? parent.top : undefined
-        anchors.bottom: viewModel !== null && !viewModel.fillFromTop ? parent.bottom : undefined
-    }
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
         spacing: 6
 
-        Label {
-            text: viewModel !== null ? viewModel.panelLabel : "Motor"
+        RowLayout {
             Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            color: "#eef7ff"
-            font.pixelSize: 14
-            font.bold: true
+
+            Label {
+                text: viewModel !== null ? viewModel.panelLabel : "Motor"
+                color: "#eef7ff"
+                font.pixelSize: 12
+                font.bold: true
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            Label {
+                text: viewModel !== null ? Math.round(viewModel.driveEffortPercent) + "%" : "0%"
+                color: "#dbefff"
+                font.pixelSize: 12
+                font.bold: true
+            }
         }
 
         Item {
             Layout.fillHeight: true
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            color: "#b0050b10"
-            radius: 8
-            border.width: 1
-            border.color: "#33000000"
+        GridLayout {
+            columns: 2
+            columnSpacing: 6
+            rowSpacing: 4
 
-            implicitHeight: indicatorGrid.implicitHeight + 10
-
-            GridLayout {
-                id: indicatorGrid
-
-                anchors.fill: parent
-                anchors.margins: 5
-                columns: 2
-                columnSpacing: 6
-                rowSpacing: 4
-
-                IndicatorLabel {
-                    text: "OC"
-                    targetColor: viewModel !== null && viewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
-                }
-                IndicatorLabel {
-                    text: "OT"
-                    targetColor: viewModel !== null && viewModel.hasOvertemperatureFault
-                        ? "#ff5f56"
-                        : viewModel !== null && viewModel.hasTemperatureWarning
-                            ? "#ffd166"
-                            : neutralColor
-                }
-                IndicatorLabel {
-                    text: "UV"
-                    targetColor: viewModel !== null && viewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
-                }
-                IndicatorLabel {
-                    text: "OV"
-                    targetColor: viewModel !== null && viewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
-                }
-                IndicatorLabel {
-                    text: "OL"
-                    targetColor: viewModel !== null && viewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
-                }
+            IndicatorLabel {
+                text: "OC"
+                targetColor: viewModel !== null && viewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
+            }
+            IndicatorLabel {
+                text: "OT"
+                targetColor: viewModel !== null && viewModel.hasOvertemperatureFault
+                    ? "#ff5f56"
+                    : viewModel !== null && viewModel.hasTemperatureWarning
+                        ? "#ffd166"
+                        : neutralColor
+            }
+            IndicatorLabel {
+                text: "UV"
+                targetColor: viewModel !== null && viewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
+            }
+            IndicatorLabel {
+                text: "OV"
+                targetColor: viewModel !== null && viewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
+            }
+            IndicatorLabel {
+                text: "OL"
+                targetColor: viewModel !== null && viewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
             }
         }
     }
