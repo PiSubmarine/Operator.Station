@@ -128,34 +128,48 @@ Rectangle {
             Layout.fillHeight: true
         }
 
-        GridLayout {
-            columns: 2
-            columnSpacing: 6
-            rowSpacing: 4
+        Rectangle {
+            Layout.fillWidth: true
+            color: "#b0050b10"
+            radius: 8
+            border.width: 1
+            border.color: "#33000000"
 
-            IndicatorLabel {
-                text: "OC"
-                targetColor: lampTelemetryViewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
-            }
-            IndicatorLabel {
-                text: "OT"
-                targetColor: lampTelemetryViewModel.hasOvertemperatureFault
-                    ? "#ff5f56"
-                    : lampTelemetryViewModel.hasTemperatureWarning
-                        ? "#ffd166"
-                        : neutralColor
-            }
-            IndicatorLabel {
-                text: "UV"
-                targetColor: lampTelemetryViewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
-            }
-            IndicatorLabel {
-                text: "OV"
-                targetColor: lampTelemetryViewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
-            }
-            IndicatorLabel {
-                text: "OL"
-                targetColor: lampTelemetryViewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
+            implicitHeight: indicatorGrid.implicitHeight + 10
+
+            GridLayout {
+                id: indicatorGrid
+
+                anchors.fill: parent
+                anchors.margins: 5
+                columns: 2
+                columnSpacing: 6
+                rowSpacing: 4
+
+                IndicatorLabel {
+                    text: "OC"
+                    targetColor: lampTelemetryViewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
+                }
+                IndicatorLabel {
+                    text: "OT"
+                    targetColor: lampTelemetryViewModel.hasOvertemperatureFault
+                        ? "#ff5f56"
+                        : lampTelemetryViewModel.hasTemperatureWarning
+                            ? "#ffd166"
+                            : neutralColor
+                }
+                IndicatorLabel {
+                    text: "UV"
+                    targetColor: lampTelemetryViewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
+                }
+                IndicatorLabel {
+                    text: "OV"
+                    targetColor: lampTelemetryViewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
+                }
+                IndicatorLabel {
+                    text: "OL"
+                    targetColor: lampTelemetryViewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
+                }
             }
         }
     }

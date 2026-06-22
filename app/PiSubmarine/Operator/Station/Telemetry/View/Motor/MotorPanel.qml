@@ -125,34 +125,48 @@ Rectangle {
             Layout.fillHeight: true
         }
 
-        GridLayout {
-            columns: 2
-            columnSpacing: 6
-            rowSpacing: 4
+        Rectangle {
+            Layout.fillWidth: true
+            color: "#b0050b10"
+            radius: 8
+            border.width: 1
+            border.color: "#33000000"
 
-            IndicatorLabel {
-                text: "OC"
-                targetColor: viewModel !== null && viewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
-            }
-            IndicatorLabel {
-                text: "OT"
-                targetColor: viewModel !== null && viewModel.hasOvertemperatureFault
-                    ? "#ff5f56"
-                    : viewModel !== null && viewModel.hasTemperatureWarning
-                        ? "#ffd166"
-                        : neutralColor
-            }
-            IndicatorLabel {
-                text: "UV"
-                targetColor: viewModel !== null && viewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
-            }
-            IndicatorLabel {
-                text: "OV"
-                targetColor: viewModel !== null && viewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
-            }
-            IndicatorLabel {
-                text: "OL"
-                targetColor: viewModel !== null && viewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
+            implicitHeight: indicatorGrid.implicitHeight + 10
+
+            GridLayout {
+                id: indicatorGrid
+
+                anchors.fill: parent
+                anchors.margins: 5
+                columns: 2
+                columnSpacing: 6
+                rowSpacing: 4
+
+                IndicatorLabel {
+                    text: "OC"
+                    targetColor: viewModel !== null && viewModel.hasOvercurrentFault ? "#ff5f56" : neutralColor
+                }
+                IndicatorLabel {
+                    text: "OT"
+                    targetColor: viewModel !== null && viewModel.hasOvertemperatureFault
+                        ? "#ff5f56"
+                        : viewModel !== null && viewModel.hasTemperatureWarning
+                            ? "#ffd166"
+                            : neutralColor
+                }
+                IndicatorLabel {
+                    text: "UV"
+                    targetColor: viewModel !== null && viewModel.hasUndervoltageFault ? "#ff5f56" : neutralColor
+                }
+                IndicatorLabel {
+                    text: "OV"
+                    targetColor: viewModel !== null && viewModel.hasOvervoltageFault ? "#ff5f56" : neutralColor
+                }
+                IndicatorLabel {
+                    text: "OL"
+                    targetColor: viewModel !== null && viewModel.hasOpenLoadFault ? "#ff5f56" : neutralColor
+                }
             }
         }
     }
