@@ -1,8 +1,5 @@
 #pragma once
 
-#include <functional>
-#include <vector>
-
 #include "PiSubmarine/Input/Fake/Binder.h"
 #include "PiSubmarine/Input/Fake/Manager.h"
 #include "PiSubmarine/Input/Fake/Serializer.h"
@@ -16,7 +13,7 @@ namespace PiSubmarine::Operator::Station::Composition
         [[nodiscard]] ::PiSubmarine::Input::Api::IManager& GetManager() override;
         [[nodiscard]] ::PiSubmarine::Input::Api::IBinder& GetBinder() override;
         [[nodiscard]] ::PiSubmarine::Input::Api::ISerializer& GetSerializer() override;
-        [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> GetTickables() override;
+        void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
     private:
         ::PiSubmarine::Input::Fake::Manager m_Manager;

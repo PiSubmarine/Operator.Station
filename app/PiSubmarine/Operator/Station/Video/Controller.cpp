@@ -85,12 +85,12 @@ namespace PiSubmarine::Operator::Station::Video
 
         if (m_IsSubscribed && m_LeaseGrant.has_value())
         {
-            static_cast<void>(m_SubscriptionService.Unsubscribe({.LeaseId = m_LeaseGrant->Lease.Id}));
+            static_cast<void>(m_SubscriptionService.Unsubscribe({.LeaseId = m_LeaseGrant->GrantedLease.Id}));
         }
 
         if (m_LeaseGrant.has_value())
         {
-            const auto releaseResult = m_LeaseIssuer.ReleaseLease(m_LeaseGrant->Lease.Id);
+            const auto releaseResult = m_LeaseIssuer.ReleaseLease(m_LeaseGrant->GrantedLease.Id);
             if (!releaseResult.has_value() && !IsNotReadyError(releaseResult.error()))
             {
                 SPDLOG_LOGGER_WARN(m_Logger, "Failed to release video lease");
@@ -139,7 +139,7 @@ namespace PiSubmarine::Operator::Station::Video
             .HasLease = m_LeaseGrant.has_value(),
             .IsSubscribed = m_IsSubscribed,
             .IsPipelineRunning = m_Pipeline != nullptr && m_Pipeline->IsRunning(),
-            .LeaseId = m_LeaseGrant.has_value() ? std::optional(m_LeaseGrant->Lease.Id) : std::nullopt};
+            .LeaseId = m_LeaseGrant.has_value() ? std::optional(m_LeaseGrant->GrantedLease.Id) : std::nullopt};
     }
 
     void Controller::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)
@@ -225,7 +225,8 @@ namespace PiSubmarine::Operator::Station::Video
         m_LeaseGrant = *leaseResult;
         m_IsSubscribed = false;
         m_IsDirty = true;
-        m_NextLeaseRenewal = uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_LeaseGrant->Lease.Duration / 2);
+        m_NextLeaseRenewal =
+            uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_LeaseGrant->GrantedLease.Duration / 2);
         return {};
     }
 
@@ -236,7 +237,7 @@ namespace PiSubmarine::Operator::Station::Video
             return std::unexpected(MakeCommunicationError());
         }
 
-        const auto renewResult = m_LeaseIssuer.RenewLease(m_LeaseGrant->Lease.Id);
+        const auto renewResult = m_LeaseIssuer.RenewLease(m_LeaseGrant->GrantedLease.Id);
         if (!renewResult.has_value())
         {
             if (IsNotReadyError(renewResult.error()))
@@ -249,8 +250,9 @@ namespace PiSubmarine::Operator::Station::Video
             return std::unexpected(renewResult.error());
         }
 
-        m_LeaseGrant->Lease = *renewResult;
-        m_NextLeaseRenewal = uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_LeaseGrant->Lease.Duration / 2);
+        m_LeaseGrant->GrantedLease = *renewResult;
+        m_NextLeaseRenewal =
+            uptime + std::chrono::duration_cast<std::chrono::nanoseconds>(m_LeaseGrant->GrantedLease.Duration / 2);
         return {};
     }
 
@@ -262,7 +264,7 @@ namespace PiSubmarine::Operator::Station::Video
         }
 
         const auto subscribeResult = m_SubscriptionService.Subscribe({
-            .LeaseId = m_LeaseGrant->Lease.Id,
+            .LeaseId = m_LeaseGrant->GrantedLease.Id,
             .ClientEndpoint = m_Config.SubscriptionEndpoint});
         if (!subscribeResult.has_value())
         {

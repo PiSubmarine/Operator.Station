@@ -1,10 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <functional>
 #include <memory>
-#include <vector>
-
 #include "PiSubmarine/Ballast/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Battery/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Depth/Telemetry/Protobuf/Deserializer.h"
@@ -16,6 +13,7 @@
 #include "PiSubmarine/Security/Nonce/Openssl/Provider.h"
 #include "PiSubmarine/Telemetry/Client/Udp/Client.h"
 #include "PiSubmarine/Telemetry/Client/Udp/Source.h"
+#include "PiSubmarine/Time/ITickable.h"
 #include "PiSubmarine/Time/Telemetry/Protobuf/Deserializer.h"
 #include "PiSubmarine/Udp/Api/Endpoint.h"
 #include "PiSubmarine/Udp/Asio/Socket.h"
@@ -45,10 +43,11 @@ namespace PiSubmarine::Operator::Station::Composition
         [[nodiscard]] ::PiSubmarine::Proximity::Telemetry::Api::IProvider& GetProximity() override;
         [[nodiscard]] ::PiSubmarine::Time::Telemetry::Api::IProvider& GetTime() override;
         [[nodiscard]] ::PiSubmarine::Video::Telemetry::Api::IProvider& GetVideo() override;
-        [[nodiscard]] bool HasLease() const override;
-        [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> GetTickables() override;
+        void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
     private:
+        [[nodiscard]] OptionalLeaseId GetLeaseId() const;
+
         ::PiSubmarine::Udp::Asio::Socket m_Socket;
         ::PiSubmarine::Security::Aead::Openssl::Provider m_AeadProvider;
         ::PiSubmarine::Security::Nonce::Openssl::Provider m_NonceProvider;
@@ -73,6 +72,7 @@ namespace PiSubmarine::Operator::Station::Composition
         std::vector<std::unique_ptr<::PiSubmarine::Telemetry::Client::Udp::Source>> m_MotorSources;
         std::vector<std::unique_ptr<::PiSubmarine::Motor::Telemetry::Protobuf::Deserializer>> m_MotorProvidersStorage;
         std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>> m_Motors;
-        std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> m_Tickables;
+        OptionalLeaseId m_LastLeaseId;
+        bool m_HasLeaseState = false;
     };
 }

@@ -12,7 +12,7 @@ namespace PiSubmarine::Operator::Station::Lease
         ++m_Counter;
 
         return ::PiSubmarine::Lease::Api::LeaseGrant{
-            .Lease = ::PiSubmarine::Lease::Api::Lease{
+            .GrantedLease = ::PiSubmarine::Lease::Api::Lease{
                 .Id = ::PiSubmarine::Lease::Api::LeaseId{.Value = "operator-station-lease-" + std::to_string(m_Counter)},
                 .Resource = request.Resource,
                 .Duration = std::chrono::seconds(4)}};

@@ -34,7 +34,7 @@ namespace PiSubmarine::Operator::Station::Lease
         {
             m_PendingAcquireRequests.erase(key);
             m_CachedGrantsByResource[key] = *readyResult;
-            m_CachedLeasesById[readyResult->Lease.Id.Value] = readyResult->Lease;
+            m_CachedLeasesById[readyResult->GrantedLease.Id.Value] = readyResult->GrantedLease;
             return *readyResult;
         }
 
@@ -166,7 +166,7 @@ namespace PiSubmarine::Operator::Station::Lease
 
         for (auto iterator = m_CachedGrantsByResource.begin(); iterator != m_CachedGrantsByResource.end();)
         {
-            if (iterator->second.Lease.Id == leaseId)
+            if (iterator->second.GrantedLease.Id == leaseId)
             {
                 iterator = m_CachedGrantsByResource.erase(iterator);
                 continue;

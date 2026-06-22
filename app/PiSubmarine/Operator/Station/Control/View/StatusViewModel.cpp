@@ -60,8 +60,9 @@ namespace PiSubmarine::Operator::Station::Control::View
         emit StateChanged();
     }
 
-    void StatusViewModel::SetLeaseState(const bool hasLease)
+    void StatusViewModel::LeaseStateChanged(const ::PiSubmarine::Operator::Station::Composition::OptionalLeaseId& leaseId)
     {
+        const bool hasLease = leaseId.has_value();
         if (m_HasLease == hasLease)
         {
             return;

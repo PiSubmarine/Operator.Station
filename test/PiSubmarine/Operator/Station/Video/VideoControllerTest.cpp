@@ -90,7 +90,7 @@ namespace PiSubmarine::Operator::Station::Video
         auto pipelineBuilder = std::make_shared<FakePipelineBuilder>();
         VideoController controller(Config{}, loggerFactory, leaseIssuer, subscriptionService, pipelineBuilder);
         const auto leaseGrant = Lease::Api::LeaseGrant{
-            .Lease = Lease::Api::Lease{
+            .GrantedLease = Lease::Api::Lease{
                 .Id = Lease::Api::LeaseId{.Value = "lease-1"},
                 .Resource = Lease::Api::ResourceId{.Value = "video-main"},
                 .Duration = std::chrono::seconds(4)}};
@@ -130,7 +130,7 @@ namespace PiSubmarine::Operator::Station::Video
             pipelineBuilder);
         TailFactoryStub tailFactory;
         const auto leaseGrant = Lease::Api::LeaseGrant{
-            .Lease = Lease::Api::Lease{
+            .GrantedLease = Lease::Api::Lease{
                 .Id = Lease::Api::LeaseId{.Value = "lease-2"},
                 .Resource = Lease::Api::ResourceId{.Value = "video-main"},
                 .Duration = std::chrono::seconds(6)}};
@@ -160,7 +160,7 @@ namespace PiSubmarine::Operator::Station::Video
         auto pipelineBuilder = std::make_shared<FakePipelineBuilder>();
         VideoController controller(Config{}, loggerFactory, leaseIssuer, subscriptionService, pipelineBuilder);
         const auto leaseGrant = Lease::Api::LeaseGrant{
-            .Lease = Lease::Api::Lease{
+            .GrantedLease = Lease::Api::Lease{
                 .Id = Lease::Api::LeaseId{.Value = "lease-3"},
                 .Resource = Lease::Api::ResourceId{.Value = "video-main"},
                 .Duration = std::chrono::seconds(4)}};
@@ -190,7 +190,7 @@ namespace PiSubmarine::Operator::Station::Video
         VideoController controller(Config{}, loggerFactory, leaseIssuer, subscriptionService, pipelineBuilder);
         TailFactoryStub tailFactory;
         const auto leaseGrant = Lease::Api::LeaseGrant{
-            .Lease = Lease::Api::Lease{
+            .GrantedLease = Lease::Api::Lease{
                 .Id = Lease::Api::LeaseId{.Value = "lease-4"},
                 .Resource = Lease::Api::ResourceId{.Value = "video-main"},
                 .Duration = std::chrono::seconds(6)}};

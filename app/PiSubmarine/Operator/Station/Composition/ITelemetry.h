@@ -1,13 +1,13 @@
 #pragma once
 
-#include <functional>
-#include <vector>
+#include <QObject>
 
 #include "PiSubmarine/Ballast/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Battery/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Depth/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Lamp/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Motor/Telemetry/Api/IProvider.h"
+#include "PiSubmarine/Operator/Station/Composition/LeaseState.h"
 #include "PiSubmarine/Proximity/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Time/Telemetry/Api/IProvider.h"
 #include "PiSubmarine/Time/ITickable.h"
@@ -15,9 +15,16 @@
 
 namespace PiSubmarine::Operator::Station::Composition
 {
-	class ITelemetry
+	class ITelemetry : public QObject, public ::PiSubmarine::Time::ITickable
 	{
+        Q_OBJECT
+
 	public:
+        explicit ITelemetry(QObject* parent = nullptr)
+            : QObject(parent)
+        {
+        }
+
 		virtual ~ITelemetry() = default;
 
 		[[nodiscard]] virtual ::PiSubmarine::Ballast::Telemetry::Api::IProvider& GetBallast() = 0;
@@ -29,7 +36,8 @@ namespace PiSubmarine::Operator::Station::Composition
 		[[nodiscard]] virtual ::PiSubmarine::Proximity::Telemetry::Api::IProvider& GetProximity() = 0;
 		[[nodiscard]] virtual ::PiSubmarine::Time::Telemetry::Api::IProvider& GetTime() = 0;
 		[[nodiscard]] virtual ::PiSubmarine::Video::Telemetry::Api::IProvider& GetVideo() = 0;
-		[[nodiscard]] virtual bool HasLease() const = 0;
-		[[nodiscard]] virtual std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> GetTickables() = 0;
+
+    signals:
+        void LeaseStateChanged(const OptionalLeaseId& leaseId);
 	};
 }

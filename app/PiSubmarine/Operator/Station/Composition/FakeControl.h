@@ -1,8 +1,5 @@
 #pragma once
 
-#include <functional>
-#include <vector>
-
 #include "PiSubmarine/Operator/Station/Composition/IControl.h"
 #include "PiSubmarine/Operator/Station/Control/FakeSink.h"
 
@@ -12,9 +9,10 @@ namespace PiSubmarine::Operator::Station::Composition
     {
     public:
         [[nodiscard]] ::PiSubmarine::Control::Api::Input::ISink& GetSink() override;
-        [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> GetTickables() override;
+        void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
     private:
         ::PiSubmarine::Operator::Station::Control::FakeSink m_Sink;
+        bool m_HasLeaseState = false;
     };
 }

@@ -29,6 +29,7 @@
 #include "PiSubmarine/Operator/Station/Composition/FakeControl.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeInput.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeLease.h"
+#include "PiSubmarine/Operator/Station/Composition/LeaseState.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeTelemetry.h"
 #include "PiSubmarine/Operator/Station/Composition/FakeVideo.h"
 #include "PiSubmarine/Operator/Station/Composition/IControl.h"
@@ -266,6 +267,8 @@ int main(int argc, char* argv[])
 
     QGuiApplication application(argc, argv);
     qRegisterMetaType<PiSubmarine::Operator::Station::Video::Status>("PiSubmarine::Operator::Station::Video::Status");
+    qRegisterMetaType<PiSubmarine::Operator::Station::Composition::OptionalLeaseId>(
+        "PiSubmarine::Operator::Station::Composition::OptionalLeaseId");
 
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -592,8 +595,7 @@ int main(int argc, char* argv[])
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::ProximityController>(telemetry->GetProximity());
     auto timeTelemetryController =
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::TimeController>(
-            telemetry->GetTime(),
-            [telemetry = telemetry.get()] { return telemetry->HasLease(); });
+            telemetry->GetTime());
     auto videoStatusTelemetryController =
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::VideoStatusController>(telemetry->GetVideo());
 
@@ -633,30 +635,21 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    for (auto& controlTickable : control->GetTickables())
+    if (!controllerTickRunner->AddTickable(*control).has_value())
     {
-        if (!controllerTickRunner->AddTickable(controlTickable.get()).has_value())
-        {
-            SPDLOG_LOGGER_CRITICAL(logger, "Failed to add control tickable to controllers tick runner");
-            return 1;
-        }
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add control composition to controllers tick runner");
+        return 1;
     }
 
-    for (auto& telemetryTickable : telemetry->GetTickables())
+    if (!controllerTickRunner->AddTickable(*telemetry).has_value())
     {
-        if (!controllerTickRunner->AddTickable(telemetryTickable.get()).has_value())
-        {
-            SPDLOG_LOGGER_CRITICAL(logger, "Failed to add telemetry tickable to controllers tick runner");
-            return 1;
-        }
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add telemetry composition to controllers tick runner");
+        return 1;
     }
-    for (auto& inputTickable : input->GetTickables())
+    if (!controllerTickRunner->AddTickable(*input).has_value())
     {
-        if (!controllerTickRunner->AddTickable(inputTickable.get()).has_value())
-        {
-            SPDLOG_LOGGER_CRITICAL(logger, "Failed to add input tickable to controllers tick runner");
-            return 1;
-        }
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add input composition to controllers tick runner");
+        return 1;
     }
     if (!controllerTickRunner->AddTickable(*telemetryController).has_value())
     {
@@ -726,19 +719,28 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Telemetry::View::Proximity::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
     QObject::connect(
+        telemetry.get(),
+        &PiSubmarine::Operator::Station::Composition::ITelemetry::LeaseStateChanged,
+        timeTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::TimeController::LeaseStateChanged,
+        Qt::QueuedConnection);
+    QObject::connect(
+        telemetry.get(),
+        &PiSubmarine::Operator::Station::Composition::ITelemetry::LeaseStateChanged,
+        &timeTelemetryViewModel,
+        &PiSubmarine::Operator::Station::Telemetry::View::Time::ViewModel::LeaseStateChanged,
+        Qt::QueuedConnection);
+    QObject::connect(
         timeTelemetryController.get(),
         &PiSubmarine::Operator::Station::Telemetry::TimeController::SnapshotChanged,
         &timeTelemetryViewModel,
         &PiSubmarine::Operator::Station::Telemetry::View::Time::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
     QObject::connect(
-        timeTelemetryController.get(),
-        &PiSubmarine::Operator::Station::Telemetry::TimeController::SnapshotChanged,
+        control.get(),
+        &PiSubmarine::Operator::Station::Composition::IControl::LeaseStateChanged,
         &controlStatusViewModel,
-        [viewModel = &controlStatusViewModel](const bool hasLease, const QString&, const QString&)
-        {
-            viewModel->SetLeaseState(hasLease);
-        },
+        &PiSubmarine::Operator::Station::Control::View::StatusViewModel::LeaseStateChanged,
         Qt::QueuedConnection);
     QObject::connect(
         videoStatusTelemetryController.get(),

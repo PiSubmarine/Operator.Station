@@ -91,7 +91,7 @@ namespace PiSubmarine::Operator::Station::Video
         TailFactoryStub tailFactory;
         Controller controller(Config{}, loggerFactory, leaseIssuer, subscriptionService, pipelineBuilder, tailFactory);
         const auto leaseGrant = ::PiSubmarine::Lease::Api::LeaseGrant{
-            .Lease = ::PiSubmarine::Lease::Api::Lease{
+            .GrantedLease = ::PiSubmarine::Lease::Api::Lease{
                 .Id = ::PiSubmarine::Lease::Api::LeaseId{.Value = "lease-1"},
                 .Resource = ::PiSubmarine::Lease::Api::ResourceId{.Value = "video-main"},
                 .Duration = std::chrono::seconds(4)}};
@@ -128,7 +128,7 @@ namespace PiSubmarine::Operator::Station::Video
         TailFactoryStub tailFactory;
         Controller controller(Config{}, loggerFactory, leaseIssuer, subscriptionService, pipelineBuilder, tailFactory);
         const auto leaseGrant = ::PiSubmarine::Lease::Api::LeaseGrant{
-            .Lease = ::PiSubmarine::Lease::Api::Lease{
+            .GrantedLease = ::PiSubmarine::Lease::Api::Lease{
                 .Id = ::PiSubmarine::Lease::Api::LeaseId{.Value = "lease-2"},
                 .Resource = ::PiSubmarine::Lease::Api::ResourceId{.Value = "video-main"},
                 .Duration = std::chrono::seconds(4)}};

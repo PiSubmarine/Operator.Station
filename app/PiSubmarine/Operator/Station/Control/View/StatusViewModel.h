@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QString>
 
+#include "PiSubmarine/Operator/Station/Composition/LeaseState.h"
+
 namespace PiSubmarine::Operator::Station::Control::View
 {
     class StatusViewModel final : public QObject
@@ -25,7 +27,7 @@ namespace PiSubmarine::Operator::Station::Control::View
         Q_INVOKABLE void ToggleBindingDialog();
 
     public slots:
-        void SetLeaseState(bool hasLease);
+        void LeaseStateChanged(const ::PiSubmarine::Operator::Station::Composition::OptionalLeaseId& leaseId);
         void SetAllBindingsConfigured(bool allBindingsConfigured);
 
     signals:

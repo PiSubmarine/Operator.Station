@@ -82,6 +82,7 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Composition/ILease.h
         PiSubmarine/Operator/Station/Composition/ITelemetry.h
         PiSubmarine/Operator/Station/Composition/IVideo.h
+        PiSubmarine/Operator/Station/Composition/LeaseState.h
         PiSubmarine/Operator/Station/Composition/RemoteLease.cpp
         PiSubmarine/Operator/Station/Composition/RemoteLease.h
         PiSubmarine/Operator/Station/Composition/RemoteControl.cpp

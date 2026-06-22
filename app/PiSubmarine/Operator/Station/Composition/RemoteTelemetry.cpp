@@ -27,7 +27,8 @@ namespace PiSubmarine::Operator::Station::Composition
         ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
         ::PiSubmarine::Udp::Api::Endpoint serverEndpoint,
         const std::size_t receiveQueueCapacity)
-        : m_Socket(receiveQueueCapacity)
+        : ITelemetry()
+        , m_Socket(receiveQueueCapacity)
         , m_Client(
             leaseIssuer,
             m_AeadProvider,
@@ -71,8 +72,6 @@ namespace PiSubmarine::Operator::Station::Composition
             m_Motors.emplace_back(*m_MotorProvidersStorage.back());
         }
 
-        m_Tickables.emplace_back(m_Socket);
-        m_Tickables.emplace_back(m_Client);
     }
 
     ::PiSubmarine::Ballast::Telemetry::Api::IProvider& RemoteTelemetry::GetBallast()
@@ -115,13 +114,30 @@ namespace PiSubmarine::Operator::Station::Composition
         return m_VideoProvider;
     }
 
-    bool RemoteTelemetry::HasLease() const
+    void RemoteTelemetry::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)
     {
-        return m_Client.HasLease();
+        m_Socket.Tick(uptime, deltaTime);
+        m_Client.Tick(uptime, deltaTime);
+
+        const auto leaseId = GetLeaseId();
+        if (m_HasLeaseState && leaseId == m_LastLeaseId)
+        {
+            return;
+        }
+
+        m_LastLeaseId = leaseId;
+        m_HasLeaseState = true;
+        emit LeaseStateChanged(m_LastLeaseId);
     }
 
-    std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> RemoteTelemetry::GetTickables()
+    OptionalLeaseId RemoteTelemetry::GetLeaseId() const
     {
-        return m_Tickables;
+        const auto lease = m_Client.GetLease();
+        if (!lease.has_value())
+        {
+            return std::nullopt;
+        }
+
+        return QString::fromStdString(lease->Id.Value);
     }
 }

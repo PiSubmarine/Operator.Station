@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QString>
 
+#include "PiSubmarine/Operator/Station/Composition/LeaseState.h"
+
 namespace PiSubmarine::Operator::Station::Telemetry::View::Time
 {
     class ViewModel final : public QObject
@@ -21,7 +23,8 @@ namespace PiSubmarine::Operator::Station::Telemetry::View::Time
         [[nodiscard]] QString GetBackgroundColor() const;
 
     public slots:
-        void SetSnapshot(bool hasLease, const QString& displayText, const QString& backgroundColor);
+        void LeaseStateChanged(const ::PiSubmarine::Operator::Station::Composition::OptionalLeaseId& leaseId);
+        void SetSnapshot(const QString& displayText, const QString& backgroundColor);
 
     signals:
         void SnapshotChanged();

@@ -9,7 +9,8 @@ namespace PiSubmarine::Operator::Station::Composition
         ::PiSubmarine::Lease::Api::ILeaseIssuer& leaseIssuer,
         ::PiSubmarine::Udp::Api::Endpoint serverEndpoint,
         const std::size_t receiveQueueCapacity)
-        : m_Socket(receiveQueueCapacity)
+        : IControl()
+        , m_Socket(receiveQueueCapacity)
         , m_Client(
             leaseIssuer,
             m_Serializer,
@@ -25,8 +26,6 @@ namespace PiSubmarine::Operator::Station::Composition
         {
             throw std::runtime_error("Failed to bind control UDP socket");
         }
-
-        m_Tickables.emplace_back(m_Socket);
     }
 
     ::PiSubmarine::Control::Api::Input::ISink& RemoteControl::GetSink()
@@ -34,8 +33,30 @@ namespace PiSubmarine::Operator::Station::Composition
         return m_Client;
     }
 
-    std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> RemoteControl::GetTickables()
+
+    void RemoteControl::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)
     {
-        return m_Tickables;
+        m_Socket.Tick(uptime, deltaTime);
+
+        const auto leaseId = GetLeaseId();
+        if (m_HasLeaseState && leaseId == m_LastLeaseId)
+        {
+            return;
+        }
+
+        m_LastLeaseId = leaseId;
+        m_HasLeaseState = true;
+        emit LeaseStateChanged(m_LastLeaseId);
+    }
+
+    OptionalLeaseId RemoteControl::GetLeaseId()
+    {
+        const auto lease = m_Client.GetLease();
+        if (!lease.has_value())
+        {
+            return std::nullopt;
+        }
+
+        return QString::fromStdString(lease->Id.Value);
     }
 }

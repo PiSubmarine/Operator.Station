@@ -10,29 +10,27 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
     TimeController::TimeController(
         ::PiSubmarine::Time::Telemetry::Api::IProvider& provider,
-        std::function<bool()> hasLease,
         QObject* parent)
         : QObject(parent)
         , m_Provider(provider)
-        , m_HasLease(std::move(hasLease))
     {
     }
 
     void TimeController::Refresh(const std::chrono::nanoseconds& controllerUptime)
     {
-        const bool hasLease = m_HasLease();
+        const bool hasLease = m_LeaseId.has_value();
         if (!hasLease)
         {
-            Publish(false, "NO LEASE", "#8f1d1d");
-            m_LastLeaseState = false;
+            m_HadLease = false;
+            Publish("NO LEASE", "#8f1d1d");
             return;
         }
 
-        if (!m_LastLeaseState)
+        if (!m_HadLease)
         {
             m_LastTelemetryChangeAt = controllerUptime;
+            m_HadLease = true;
         }
-        m_LastLeaseState = true;
 
         const auto stateResult = m_Provider.GetState();
         if (stateResult.has_value())
@@ -46,7 +44,16 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
         const auto displayText = FormatUptime(m_LastTelemetryUptime.value_or(std::chrono::nanoseconds::zero()));
         const auto ageSinceChange = controllerUptime - m_LastTelemetryChangeAt;
-        Publish(true, displayText, SelectBackgroundColor(ageSinceChange));
+        Publish(displayText, SelectBackgroundColor(ageSinceChange));
+    }
+
+    void TimeController::LeaseStateChanged(const ::PiSubmarine::Operator::Station::Composition::OptionalLeaseId& leaseId)
+    {
+        m_LeaseId = leaseId;
+        if (!m_LeaseId.has_value())
+        {
+            m_LastTelemetryUptime.reset();
+        }
     }
 
     QString TimeController::FormatUptime(const std::chrono::nanoseconds uptime)
@@ -77,10 +84,9 @@ namespace PiSubmarine::Operator::Station::Telemetry
         return "#123247";
     }
 
-    void TimeController::Publish(const bool hasLease, const QString& displayText, const QString& backgroundColor)
+    void TimeController::Publish(const QString& displayText, const QString& backgroundColor)
     {
         if (m_HasSnapshot &&
-            m_LastLeaseState == hasLease &&
             m_LastDisplayText == displayText &&
             m_LastBackgroundColor == backgroundColor)
         {
@@ -88,9 +94,8 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
 
         m_HasSnapshot = true;
-        m_LastLeaseState = hasLease;
         m_LastDisplayText = displayText;
         m_LastBackgroundColor = backgroundColor;
-        emit SnapshotChanged(hasLease, displayText, backgroundColor);
+        emit SnapshotChanged(displayText, backgroundColor);
     }
 }

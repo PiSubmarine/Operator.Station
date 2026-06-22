@@ -3,7 +3,8 @@
 namespace PiSubmarine::Operator::Station::Composition
 {
     FakeTelemetry::FakeTelemetry(const std::size_t motorCount)
-        : m_Providers(Telemetry::CreateFakeProviders(motorCount))
+        : ITelemetry()
+        , m_Providers(Telemetry::CreateFakeProviders(motorCount))
     {
         m_Motors.reserve(m_Providers.Motors.size());
         for (const auto& motor : m_Providers.Motors)
@@ -52,13 +53,14 @@ namespace PiSubmarine::Operator::Station::Composition
         return *m_Providers.Video;
     }
 
-    bool FakeTelemetry::HasLease() const
+    void FakeTelemetry::Tick(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&)
     {
-        return true;
-    }
+        if (m_HasLeaseState)
+        {
+            return;
+        }
 
-    std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> FakeTelemetry::GetTickables()
-    {
-        return {};
+        m_HasLeaseState = true;
+        emit LeaseStateChanged(QStringLiteral("fake-telemetry"));
     }
 }

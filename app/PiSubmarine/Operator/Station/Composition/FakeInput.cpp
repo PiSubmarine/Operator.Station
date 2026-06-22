@@ -17,8 +17,9 @@ namespace PiSubmarine::Operator::Station::Composition
         return m_Serializer;
     }
 
-    std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> FakeInput::GetTickables()
+    void FakeInput::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)
     {
-        return {m_Manager, m_Binder};
+        m_Manager.Tick(uptime, deltaTime);
+        m_Binder.Tick(uptime, deltaTime);
     }
 }

@@ -7,8 +7,14 @@ namespace PiSubmarine::Operator::Station::Composition
         return m_Sink;
     }
 
-    std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> FakeControl::GetTickables()
+    void FakeControl::Tick(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&)
     {
-        return {};
+        if (m_HasLeaseState)
+        {
+            return;
+        }
+
+        m_HasLeaseState = true;
+        emit LeaseStateChanged(QStringLiteral("fake-control"));
     }
 }

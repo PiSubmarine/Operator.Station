@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <functional>
-#include <vector>
 
 #include "PiSubmarine/Operator/Station/Composition/ITelemetry.h"
 #include "PiSubmarine/Operator/Station/Telemetry/FakeProviders.h"
@@ -23,11 +21,11 @@ namespace PiSubmarine::Operator::Station::Composition
         [[nodiscard]] ::PiSubmarine::Proximity::Telemetry::Api::IProvider& GetProximity() override;
         [[nodiscard]] ::PiSubmarine::Time::Telemetry::Api::IProvider& GetTime() override;
         [[nodiscard]] ::PiSubmarine::Video::Telemetry::Api::IProvider& GetVideo() override;
-        [[nodiscard]] bool HasLease() const override;
-        [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Time::ITickable>> GetTickables() override;
+        void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
 
     private:
         Telemetry::FakeProviders m_Providers;
         std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>> m_Motors;
+        bool m_HasLeaseState = false;
     };
 }

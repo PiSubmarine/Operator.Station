@@ -100,7 +100,7 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto request = ::PiSubmarine::Lease::Api::LeaseRequest{
             .Resource = ::PiSubmarine::Lease::Api::ResourceId{.Value = "video-main"}};
         const auto leaseGrant = ::PiSubmarine::Lease::Api::LeaseGrant{
-            .Lease = ::PiSubmarine::Lease::Api::Lease{
+            .GrantedLease = ::PiSubmarine::Lease::Api::Lease{
                 .Id = ::PiSubmarine::Lease::Api::LeaseId{.Value = "lease-1"},
                 .Resource = request.Resource,
                 .Duration = std::chrono::seconds(4)}};
@@ -124,26 +124,26 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto request = ::PiSubmarine::Lease::Api::LeaseRequest{
             .Resource = ::PiSubmarine::Lease::Api::ResourceId{.Value = "video-main"}};
         const auto initialGrant = ::PiSubmarine::Lease::Api::LeaseGrant{
-            .Lease = ::PiSubmarine::Lease::Api::Lease{
+            .GrantedLease = ::PiSubmarine::Lease::Api::Lease{
                 .Id = ::PiSubmarine::Lease::Api::LeaseId{.Value = "lease-1"},
                 .Resource = request.Resource,
                 .Duration = std::chrono::seconds(3)}};
         const auto renewedLease = ::PiSubmarine::Lease::Api::Lease{
-            .Id = initialGrant.Lease.Id,
-            .Resource = initialGrant.Lease.Resource,
+            .Id = initialGrant.GrantedLease.Id,
+            .Resource = initialGrant.GrantedLease.Resource,
             .Duration = std::chrono::seconds(3)};
 
         ASSERT_FALSE(proxy.AcquireLease(request).has_value());
         asyncLeaseIssuer.NextAcquireResult = Error::Api::Result<::PiSubmarine::Lease::Api::LeaseGrant>(initialGrant);
         ASSERT_TRUE(proxy.AcquireLease(request).has_value());
 
-        const auto firstRenewResult = proxy.RenewLease(initialGrant.Lease.Id);
+        const auto firstRenewResult = proxy.RenewLease(initialGrant.GrantedLease.Id);
         ASSERT_TRUE(firstRenewResult.has_value());
-        EXPECT_EQ(*firstRenewResult, initialGrant.Lease);
+        EXPECT_EQ(*firstRenewResult, initialGrant.GrantedLease);
         EXPECT_EQ(asyncLeaseIssuer.RenewEnqueueCount, 1);
 
         asyncLeaseIssuer.NextRenewResult = Error::Api::Result<::PiSubmarine::Lease::Api::Lease>(renewedLease);
-        const auto secondRenewResult = proxy.RenewLease(initialGrant.Lease.Id);
+        const auto secondRenewResult = proxy.RenewLease(initialGrant.GrantedLease.Id);
         ASSERT_TRUE(secondRenewResult.has_value());
         EXPECT_EQ(*secondRenewResult, renewedLease);
         EXPECT_EQ(asyncLeaseIssuer.RenewEnqueueCount, 2);
@@ -156,7 +156,7 @@ namespace PiSubmarine::Operator::Station::Lease
         const auto request = ::PiSubmarine::Lease::Api::LeaseRequest{
             .Resource = ::PiSubmarine::Lease::Api::ResourceId{.Value = "video-main"}};
         const auto initialGrant = ::PiSubmarine::Lease::Api::LeaseGrant{
-            .Lease = ::PiSubmarine::Lease::Api::Lease{
+            .GrantedLease = ::PiSubmarine::Lease::Api::Lease{
                 .Id = ::PiSubmarine::Lease::Api::LeaseId{.Value = "lease-1"},
                 .Resource = request.Resource,
                 .Duration = std::chrono::seconds(3)}};
@@ -165,11 +165,11 @@ namespace PiSubmarine::Operator::Station::Lease
         asyncLeaseIssuer.NextAcquireResult = Error::Api::Result<::PiSubmarine::Lease::Api::LeaseGrant>(initialGrant);
         ASSERT_TRUE(proxy.AcquireLease(request).has_value());
 
-        ASSERT_TRUE(proxy.RenewLease(initialGrant.Lease.Id).has_value());
+        ASSERT_TRUE(proxy.RenewLease(initialGrant.GrantedLease.Id).has_value());
         asyncLeaseIssuer.NextRenewResult = std::unexpected(
             Error::Api::MakeError(Error::Api::ErrorCondition::CommunicationError));
 
-        const auto failedRenewResult = proxy.RenewLease(initialGrant.Lease.Id);
+        const auto failedRenewResult = proxy.RenewLease(initialGrant.GrantedLease.Id);
         ASSERT_FALSE(failedRenewResult.has_value());
         EXPECT_EQ(failedRenewResult.error().Condition, Error::Api::ErrorCondition::CommunicationError);
 
