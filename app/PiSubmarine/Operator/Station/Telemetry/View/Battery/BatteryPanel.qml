@@ -18,7 +18,7 @@ Rectangle {
         columnSpacing: 0
 
         Label {
-            text: "PACK"
+            text: "PCK"
             color: "#9db7c7"
             font.pixelSize: 14
             font.bold: true
