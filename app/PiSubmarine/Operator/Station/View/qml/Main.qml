@@ -60,25 +60,33 @@ ApplicationWindow {
                 }
             }
 
-            Grid {
+            Column {
                 z: 3
                 anchors.left: parent.left
                 anchors.leftMargin: 24
                 anchors.verticalCenter: parent.verticalCenter
-                columns: 2
-                rows: 2
-                rowSpacing: 8
-                columnSpacing: 8
+                spacing: 12
 
-                Repeater {
-                    model: motorTelemetryViewModels
+                Loader {
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml"
+                }
 
-                    delegate: Loader {
-                        required property var modelData
+                Grid {
+                    columns: 2
+                    rows: 2
+                    rowSpacing: 8
+                    columnSpacing: 8
 
-                        source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
+                    Repeater {
+                        model: motorTelemetryViewModels
 
-                        onLoaded: item.viewModel = modelData
+                        delegate: Loader {
+                            required property var modelData
+
+                            source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Motor/MotorPanel.qml"
+
+                            onLoaded: item.viewModel = modelData
+                        }
                     }
                 }
             }
@@ -117,11 +125,6 @@ ApplicationWindow {
             ColumnLayout {
                 width: 380
                 spacing: 16
-
-                Loader {
-                    Layout.fillWidth: true
-                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml"
-                }
 
                 Loader {
                     Layout.fillWidth: true

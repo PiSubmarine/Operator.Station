@@ -16,7 +16,18 @@ namespace PiSubmarine::Operator::Station::Telemetry
         void Refresh();
 
     signals:
-        void SnapshotChanged(double packVoltage, double packCurrent, double stateOfCharge, double packTemperature);
+        void SnapshotChanged(
+            double packVoltage,
+            double packCurrent,
+            double packTemperature,
+            double chargerVoltage,
+            double chargerCurrent,
+            double chargerTemperature,
+            double stateOfCharge,
+            bool hasTimeToFull,
+            qint64 timeToFullMilliseconds,
+            bool hasTimeToEmpty,
+            qint64 timeToEmptyMilliseconds);
 
     private:
         ::PiSubmarine::Battery::Telemetry::Api::IProvider& m_Provider;

@@ -74,7 +74,9 @@ namespace PiSubmarine::Operator::Station::Telemetry
                     .PackTemperature = Celsius{30.0 + (cycle * 6.0)},
                     .MonitorTemperature = Celsius{31.0},
                     .RemainingCapacity = AmpereHours{3.4},
-                    .StateOfCharge = NormalizedFraction(1.0 - cycle)};
+                    .StateOfCharge = NormalizedFraction(1.0 - cycle),
+                    .TimeToFull = std::chrono::milliseconds{(20 + (m_Tick % 40)) * 60000},
+                    .TimeToEmpty = std::chrono::milliseconds{(90 - (m_Tick % 50)) * 60000}};
             }
 
         private:

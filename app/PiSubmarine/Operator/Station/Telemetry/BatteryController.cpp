@@ -24,8 +24,15 @@ namespace PiSubmarine::Operator::Station::Telemetry
             emit SnapshotChanged(
                 m_LastState.PackVoltage.Value,
                 m_LastState.PackCurrent.Value,
+                m_LastState.PackTemperature.Value,
+                m_LastState.ChargerVoltage.Value,
+                m_LastState.ChargerCurrent.Value,
+                m_LastState.ChargerTemperature.Value,
                 static_cast<double>(m_LastState.StateOfCharge),
-                m_LastState.PackTemperature.Value);
+                m_LastState.TimeToFull.has_value(),
+                m_LastState.TimeToFull.has_value() ? m_LastState.TimeToFull->count() : 0,
+                m_LastState.TimeToEmpty.has_value(),
+                m_LastState.TimeToEmpty.has_value() ? m_LastState.TimeToEmpty->count() : 0);
         }
     }
 }
