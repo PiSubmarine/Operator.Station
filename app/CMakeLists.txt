@@ -5,20 +5,6 @@ project(${PISUBMARINE_MODULE_NAME}.App LANGUAGES CXX)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(PkgConfig QUIET)
-if(PkgConfig_FOUND)
-    pkg_check_modules(GSTREAMER_APP QUIET IMPORTED_TARGET gstreamer-app-1.0)
-endif()
-
-if(NOT TARGET PkgConfig::GSTREAMER_APP)
-    find_library(PISUBMARINE_GSTREAMER_APP_LIBRARY
-            NAMES gstapp-1.0
-            PATHS
-                "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib"
-                "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib"
-            NO_DEFAULT_PATH)
-endif()
-
 find_package(Qt6 CONFIG REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
 find_package(spdlog CONFIG REQUIRED)
 
@@ -268,13 +254,6 @@ target_include_directories(${PISUBMARINE_MODULE_NAME}.App PRIVATE ./)
 target_compile_options(${PISUBMARINE_MODULE_NAME}.App PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/EHsc>)
 target_link_libraries(${PISUBMARINE_MODULE_NAME}.App PRIVATE ${PISUBMARINE_MODULE_NAME}.AppCommon)
-if(TARGET PkgConfig::GSTREAMER_APP)
-    target_link_libraries(${PISUBMARINE_MODULE_NAME}.App PRIVATE PkgConfig::GSTREAMER_APP)
-elseif(PISUBMARINE_GSTREAMER_APP_LIBRARY)
-    target_link_libraries(${PISUBMARINE_MODULE_NAME}.App PRIVATE ${PISUBMARINE_GSTREAMER_APP_LIBRARY})
-else()
-    message(FATAL_ERROR "Failed to locate gstreamer-app-1.0 library for ${PISUBMARINE_MODULE_NAME}.App")
-endif()
 
 qt_import_qml_plugins(${PISUBMARINE_MODULE_NAME}.App)
 qt_finalize_executable(${PISUBMARINE_MODULE_NAME}.App)

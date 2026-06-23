@@ -5,8 +5,8 @@
       "name": "windows-msvc-base",
       "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "C:/b",
-      "installDir": "C:/i",
+      "binaryDir": "${sourceDir}/o/wb",
+      "installDir": "${sourceDir}/o/wi",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
@@ -14,7 +14,9 @@
         "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports",
         "VCPKG_HOST_TRIPLET": "x64-windows-static",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static",
-        "PISUBMARINE_GIT_TAG": "main"
+        "PISUBMARINE_GIT_TAG": "main",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/o/wb/vi",
+        "PISUBMARINE_BUILD_MODULE_LENGTH_LIMIT": "32"
       },
       "condition": {
         "type": "equals",
@@ -43,14 +45,15 @@
       "name": "windows-mingw-base",
       "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "C:/b",
-      "installDir": "C:/i",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/toolchains/mingw.cmake",
         "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlay-ports",
         "VCPKG_HOST_TRIPLET": "x64-mingw-static",
-        "VCPKG_TARGET_TRIPLET": "x64-mingw-static"
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-static",
+        "PISUBMARINE_BUILD_MODULE_LENGTH_LIMIT": "32"
       },
       "condition": {
         "type": "equals",
