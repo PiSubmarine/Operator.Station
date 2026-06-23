@@ -136,7 +136,7 @@ Rectangle {
             }
 
             StateButton {
-                buttonText: "MD"
+                buttonText: "MQ"
                 active: controlViewModel.streamProfile === 1
                 onPressed: controlViewModel.SetMediumQualityStreamProfile()
             }
