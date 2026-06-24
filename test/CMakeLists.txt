@@ -6,6 +6,8 @@ project(${PISUBMARINE_MODULE_NAME}.Test LANGUAGES CXX)
 
 set(${PISUBMARINE_MODULE_NAME}.Test.Sources
         "PiSubmarine/Operator/Station/Lease/SyncLeaseIssuerProxyTest.cpp"
+        "PiSubmarine/Operator/Station/Input/AxisMultiplexorTest.cpp"
+        "PiSubmarine/Operator/Station/Input/KeyMultiplexorTest.cpp"
         "PiSubmarine/Operator/Station/Video/ControllerTest.cpp")
 
 enable_testing()

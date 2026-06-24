@@ -1,6 +1,5 @@
 #include "PiSubmarine/Operator/Station/Input/Controller.h"
 
-#include <cctype>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -14,28 +13,60 @@ namespace PiSubmarine::Operator::Station::Input
     }
 
     Controller::Controller(
-        ::PiSubmarine::Input::Api::IManager& manager,
-        ::PiSubmarine::Input::Api::IBinder& binder,
-        ::PiSubmarine::Input::Api::ISerializer& serializer,
-        std::filesystem::path bindingFilePath,
+        InputSystem keyboardInputSystem,
+        InputSystem gamepadInputSystem,
         std::vector<BindingDescriptor> bindings,
         QObject* parent)
         : QObject(parent)
-        , m_Manager(manager)
-        , m_Binder(binder)
-        , m_Serializer(serializer)
-        , m_BindingFilePath(std::move(bindingFilePath))
+        , m_KeyboardInputSystem(std::move(keyboardInputSystem))
+        , m_GamepadInputSystem(std::move(gamepadInputSystem))
     {
         m_Bindings.reserve(bindings.size());
         for (auto& binding : bindings)
         {
-            m_BindingIndexByName.emplace(binding.Name, m_Bindings.size());
-            m_Bindings.push_back(BindingState{
+            BindingState state{
                 .Descriptor = std::move(binding)
-            });
+            };
+
+            if (state.Descriptor.Type == BindingType::Axis)
+            {
+                state.AxisProxy = std::make_unique<AxisMultiplexor>();
+            }
+            else
+            {
+                state.KeyProxy = std::make_unique<KeyMultiplexor>();
+            }
+
+            m_BindingIndexByName.emplace(state.Descriptor.Name, m_Bindings.size());
+            m_Bindings.push_back(std::move(state));
         }
 
-        LoadBindingFile();
+        ValidateInputSystems();
+        if (m_InputSystemsAreShared)
+        {
+            LoadSharedBindingFile();
+        }
+        else
+        {
+            LoadBindingFile(BindingDevice::Keyboard);
+            LoadBindingFile(BindingDevice::Gamepad);
+        }
+    }
+
+    void Controller::Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime)
+    {
+        for (auto& binding : m_Bindings)
+        {
+            if (binding.AxisProxy != nullptr)
+            {
+                binding.AxisProxy->Tick(uptime, deltaTime);
+            }
+
+            if (binding.KeyProxy != nullptr)
+            {
+                binding.KeyProxy->Tick(uptime, deltaTime);
+            }
+        }
     }
 
     void Controller::Start()
@@ -43,15 +74,16 @@ namespace PiSubmarine::Operator::Station::Input
         for (auto& binding : m_Bindings)
         {
             RestoreBinding(binding);
+            PublishBoundInput(binding);
         }
 
         PublishAllBindingsConfigured();
-        emit StatusMessageChanged("Ready to bind fake inputs.");
+        emit StatusMessageChanged("Ready to bind inputs.");
     }
 
-    void Controller::Capture(const QString& name)
+    void Controller::Capture(const QString& name, const BindingDevice device)
     {
-        if (!m_PendingCaptureName.empty())
+        if (m_PendingCapture.has_value())
         {
             emit StatusMessageChanged("Capture already in progress.");
             return;
@@ -65,39 +97,62 @@ namespace PiSubmarine::Operator::Station::Input
         }
 
         auto& binding = m_Bindings.at(bindingIt->second);
-        m_PendingCaptureName = binding.Descriptor.Name;
-        emit CaptureTargetChanged(name);
+        m_PendingCapture = PendingCapture{
+            .Name = binding.Descriptor.Name,
+            .Device = device
+        };
+        emit CaptureTargetChanged(name, device);
         emit CaptureInProgressChanged(true);
 
         if (binding.Descriptor.Type == BindingType::Axis)
         {
-            emit StatusMessageChanged(QString("Capturing axis for %1...").arg(name));
-            StartAxisCapture(binding);
+            emit StatusMessageChanged(QString("Capturing %1 axis for %2...").arg(DescribeDevice(device), name));
+            StartAxisCapture(binding, device);
             return;
         }
 
-        emit StatusMessageChanged(QString("Capturing key for %1...").arg(name));
-        StartKeyCapture(binding);
+        emit StatusMessageChanged(QString("Capturing %1 key for %2...").arg(DescribeDevice(device), name));
+        StartKeyCapture(binding, device);
     }
 
     void Controller::CancelCapture()
     {
-        if (m_PendingCaptureName.empty())
+        if (!m_PendingCapture.has_value())
         {
             return;
         }
 
-        m_Binder.StopCapture();
+        GetInputSystem(m_PendingCapture->Device).Binder.StopCapture();
     }
 
-    void Controller::LoadBindingFile()
+    void Controller::ValidateInputSystems()
     {
-        if (!std::filesystem::exists(m_BindingFilePath))
+        const bool managerEqual = &m_KeyboardInputSystem.Manager == &m_GamepadInputSystem.Manager;
+        const bool binderEqual = &m_KeyboardInputSystem.Binder == &m_GamepadInputSystem.Binder;
+        const bool serializerEqual = &m_KeyboardInputSystem.Serializer == &m_GamepadInputSystem.Serializer;
+        const bool pathEqual = m_KeyboardInputSystem.BindingFilePath == m_GamepadInputSystem.BindingFilePath;
+
+        const bool allEqual = managerEqual && binderEqual && serializerEqual && pathEqual;
+        const bool allUnequal = !managerEqual && !binderEqual && !serializerEqual && !pathEqual;
+
+        if (!allEqual && !allUnequal)
+        {
+            throw std::invalid_argument(
+                "Keyboard and gamepad InputSystems must be either fully shared or fully distinct.");
+        }
+
+        m_InputSystemsAreShared = allEqual;
+    }
+
+    void Controller::LoadBindingFile(const BindingDevice device)
+    {
+        const auto& inputSystem = GetInputSystem(device);
+        if (!std::filesystem::exists(inputSystem.BindingFilePath))
         {
             return;
         }
 
-        std::ifstream stream(m_BindingFilePath);
+        std::ifstream stream(inputSystem.BindingFilePath);
         std::string line;
         while (std::getline(stream, line))
         {
@@ -133,26 +188,96 @@ namespace PiSubmarine::Operator::Station::Input
 
             try
             {
-                binding.Serialized = DecodeBytes(encoded);
+                GetDeviceBinding(binding, device).Serialized = DecodeBytes(encoded);
             }
             catch (const std::exception&)
             {
-                binding.Serialized.clear();
+                GetDeviceBinding(binding, device).Serialized.clear();
             }
         }
     }
 
-    void Controller::SaveBindingFile()
+    void Controller::LoadSharedBindingFile()
     {
-        if (m_BindingFilePath.has_parent_path())
+        const auto& inputSystem = m_KeyboardInputSystem;
+        if (!std::filesystem::exists(inputSystem.BindingFilePath))
         {
-            std::filesystem::create_directories(m_BindingFilePath.parent_path());
+            return;
         }
 
-        std::ofstream stream(m_BindingFilePath, std::ios::trunc);
+        std::ifstream stream(inputSystem.BindingFilePath);
+        std::string line;
+        while (std::getline(stream, line))
+        {
+            if (line.empty())
+            {
+                continue;
+            }
+
+            std::istringstream lineStream(line);
+            std::string type;
+            std::string name;
+            std::string thirdColumn;
+            std::string fourthColumn;
+
+            if (!std::getline(lineStream, type, '\t') ||
+                !std::getline(lineStream, name, '\t') ||
+                !std::getline(lineStream, thirdColumn, '\t'))
+            {
+                continue;
+            }
+
+            BindingDevice device = BindingDevice::Keyboard;
+            std::string encoded = thirdColumn;
+            if (std::getline(lineStream, fourthColumn))
+            {
+                const auto decodedDevice = DecodeDevice(thirdColumn);
+                if (!decodedDevice.has_value())
+                {
+                    continue;
+                }
+
+                device = *decodedDevice;
+                encoded = fourthColumn;
+            }
+
+            const auto bindingIt = m_BindingIndexByName.find(name);
+            if (bindingIt == m_BindingIndexByName.end())
+            {
+                continue;
+            }
+
+            auto& binding = m_Bindings.at(bindingIt->second);
+            const auto expectedType = binding.Descriptor.Type == BindingType::Axis ? "axis" : "key";
+            if (type != expectedType)
+            {
+                continue;
+            }
+
+            try
+            {
+                GetDeviceBinding(binding, device).Serialized = DecodeBytes(encoded);
+            }
+            catch (const std::exception&)
+            {
+                GetDeviceBinding(binding, device).Serialized.clear();
+            }
+        }
+    }
+
+    void Controller::SaveBindingFile(const BindingDevice device) const
+    {
+        const auto& inputSystem = GetInputSystem(device);
+        if (inputSystem.BindingFilePath.has_parent_path())
+        {
+            std::filesystem::create_directories(inputSystem.BindingFilePath.parent_path());
+        }
+
+        std::ofstream stream(inputSystem.BindingFilePath, std::ios::trunc);
         for (const auto& binding : m_Bindings)
         {
-            if (binding.Serialized.empty())
+            const auto& deviceBinding = GetDeviceBinding(binding, device);
+            if (deviceBinding.Serialized.empty())
             {
                 continue;
             }
@@ -161,16 +286,61 @@ namespace PiSubmarine::Operator::Station::Input
                    << '\t'
                    << binding.Descriptor.Name
                    << '\t'
-                   << EncodeBytes(binding.Serialized)
+                   << EncodeBytes(deviceBinding.Serialized)
                    << '\n';
+        }
+    }
+
+    void Controller::SaveSharedBindingFile() const
+    {
+        const auto& inputSystem = m_KeyboardInputSystem;
+        if (inputSystem.BindingFilePath.has_parent_path())
+        {
+            std::filesystem::create_directories(inputSystem.BindingFilePath.parent_path());
+        }
+
+        std::ofstream stream(inputSystem.BindingFilePath, std::ios::trunc);
+        for (const auto& binding : m_Bindings)
+        {
+            for (const auto device : {BindingDevice::Keyboard, BindingDevice::Gamepad})
+            {
+                const auto& deviceBinding = GetDeviceBinding(binding, device);
+                if (deviceBinding.Serialized.empty())
+                {
+                    continue;
+                }
+
+                stream << (binding.Descriptor.Type == BindingType::Axis ? "axis" : "key")
+                       << '\t'
+                       << binding.Descriptor.Name
+                       << '\t'
+                       << EncodeDevice(device)
+                       << '\t'
+                       << EncodeBytes(deviceBinding.Serialized)
+                       << '\n';
+            }
         }
     }
 
     void Controller::RestoreBinding(BindingState& state)
     {
-        if (state.Serialized.empty())
+        RestoreDeviceBinding(state, BindingDevice::Keyboard);
+        RestoreDeviceBinding(state, BindingDevice::Gamepad);
+        UpdateProxy(state);
+    }
+
+    void Controller::RestoreDeviceBinding(BindingState& state, const BindingDevice device)
+    {
+        auto& deviceBinding = GetDeviceBinding(state, device);
+        auto& inputSystem = GetInputSystem(device);
+        deviceBinding.AxisBinding.reset();
+        deviceBinding.KeyBinding.reset();
+        deviceBinding.Axis.reset();
+        deviceBinding.Key.reset();
+
+        if (deviceBinding.Serialized.empty())
         {
-            emit BindingHintChanged(QString::fromStdString(state.Descriptor.Name), "Unbound");
+            emit BindingHintChanged(QString::fromStdString(state.Descriptor.Name), device, "Unbound");
             return;
         }
 
@@ -178,67 +348,108 @@ namespace PiSubmarine::Operator::Station::Input
         {
             if (state.Descriptor.Type == BindingType::Axis)
             {
-                state.AxisBinding = m_Serializer.DeserializeAxis(state.Serialized);
-                state.Axis = m_Manager.CreateAxis(*state.AxisBinding);
+                deviceBinding.AxisBinding = inputSystem.Serializer.DeserializeAxis(deviceBinding.Serialized);
+                deviceBinding.Axis = inputSystem.Manager.CreateAxis(*deviceBinding.AxisBinding);
                 emit BindingHintChanged(
                     QString::fromStdString(state.Descriptor.Name),
-                    QString::fromStdString(state.AxisBinding->GetHint()));
-                emit OnAxisBound(QString::fromStdString(state.Descriptor.Name), state.Axis.get());
+                    device,
+                    QString::fromStdString(deviceBinding.AxisBinding->GetHint()));
                 return;
             }
 
-            state.KeyBinding = m_Serializer.DeserializeKey(state.Serialized);
-            state.Key = m_Manager.CreateKey(*state.KeyBinding);
+            deviceBinding.KeyBinding = inputSystem.Serializer.DeserializeKey(deviceBinding.Serialized);
+            deviceBinding.Key = inputSystem.Manager.CreateKey(*deviceBinding.KeyBinding);
             emit BindingHintChanged(
                 QString::fromStdString(state.Descriptor.Name),
-                QString::fromStdString(state.KeyBinding->GetHint()));
-            emit OnKeyBound(QString::fromStdString(state.Descriptor.Name), state.Key.get());
+                device,
+                QString::fromStdString(deviceBinding.KeyBinding->GetHint()));
         }
         catch (const std::exception&)
         {
-            state.Serialized.clear();
-            state.AxisBinding.reset();
-            state.KeyBinding.reset();
-            state.Axis.reset();
-            state.Key.reset();
-            emit BindingHintChanged(QString::fromStdString(state.Descriptor.Name), "Unbound");
+            deviceBinding.Serialized.clear();
+            deviceBinding.AxisBinding.reset();
+            deviceBinding.KeyBinding.reset();
+            deviceBinding.Axis.reset();
+            deviceBinding.Key.reset();
+            emit BindingHintChanged(QString::fromStdString(state.Descriptor.Name), device, "Unbound");
         }
-
-        PublishAllBindingsConfigured();
     }
 
-    void Controller::StartAxisCapture(BindingState& state)
+    void Controller::PublishBoundInput(BindingState& state)
     {
-        m_Binder.StartCapture([this, name = state.Descriptor.Name](
+        if (state.AxisProxy != nullptr)
+        {
+            emit OnAxisBound(QString::fromStdString(state.Descriptor.Name), state.AxisProxy.get());
+            return;
+        }
+
+        emit OnKeyBound(QString::fromStdString(state.Descriptor.Name), state.KeyProxy.get());
+    }
+
+    void Controller::UpdateProxy(BindingState& state)
+    {
+        if (state.AxisProxy != nullptr)
+        {
+            std::vector<::PiSubmarine::Input::Api::IAxis*> sources;
+            if (state.Keyboard.Axis != nullptr)
+            {
+                sources.push_back(state.Keyboard.Axis.get());
+            }
+            if (state.Gamepad.Axis != nullptr)
+            {
+                sources.push_back(state.Gamepad.Axis.get());
+            }
+
+            state.AxisProxy->SetSources(std::move(sources));
+            return;
+        }
+
+        std::vector<::PiSubmarine::Input::Api::IKey*> sources;
+        if (state.Keyboard.Key != nullptr)
+        {
+            sources.push_back(state.Keyboard.Key.get());
+        }
+        if (state.Gamepad.Key != nullptr)
+        {
+            sources.push_back(state.Gamepad.Key.get());
+        }
+
+        state.KeyProxy->SetSources(std::move(sources));
+    }
+
+    void Controller::StartAxisCapture(BindingState& state, const BindingDevice device)
+    {
+        GetInputSystem(device).Binder.StartCapture([this, name = state.Descriptor.Name, device](
             const ::PiSubmarine::Input::Api::IBinder::CaptureStatus status,
             std::unique_ptr<::PiSubmarine::Input::Api::IAxisBinding> binding)
         {
-            CompleteAxisCapture(name, status, std::move(binding));
+            CompleteAxisCapture(name, device, status, std::move(binding));
         });
     }
 
-    void Controller::StartKeyCapture(BindingState& state)
+    void Controller::StartKeyCapture(BindingState& state, const BindingDevice device)
     {
-        m_Binder.StartCapture([this, name = state.Descriptor.Name](
+        GetInputSystem(device).Binder.StartCapture([this, name = state.Descriptor.Name, device](
             const ::PiSubmarine::Input::Api::IBinder::CaptureStatus status,
             std::unique_ptr<::PiSubmarine::Input::Api::IKeyBinding> binding)
         {
-            CompleteKeyCapture(name, status, std::move(binding));
+            CompleteKeyCapture(name, device, status, std::move(binding));
         });
     }
 
     void Controller::CompleteAxisCapture(
         const std::string& name,
+        const BindingDevice device,
         const ::PiSubmarine::Input::Api::IBinder::CaptureStatus status,
         std::unique_ptr<::PiSubmarine::Input::Api::IAxisBinding> binding)
     {
-        if (m_PendingCaptureName != name)
+        if (!m_PendingCapture.has_value() || m_PendingCapture->Name != name || m_PendingCapture->Device != device)
         {
             return;
         }
 
-        m_PendingCaptureName.clear();
-        emit CaptureTargetChanged({});
+        m_PendingCapture.reset();
+        emit CaptureTargetChanged({}, device);
         emit CaptureInProgressChanged(false);
 
         const auto bindingIt = m_BindingIndexByName.find(name);
@@ -255,27 +466,37 @@ namespace PiSubmarine::Operator::Station::Input
         }
 
         auto& state = m_Bindings.at(bindingIt->second);
-        state.Serialized = m_Serializer.Serialize(*binding);
-        state.AxisBinding.reset();
-        state.Axis.reset();
-        RestoreBinding(state);
-        SaveBindingFile();
+        auto& deviceBinding = GetDeviceBinding(state, device);
+        deviceBinding.Serialized = GetInputSystem(device).Serializer.Serialize(*binding);
+        deviceBinding.AxisBinding.reset();
+        deviceBinding.Axis.reset();
+        RestoreDeviceBinding(state, device);
+        UpdateProxy(state);
+        if (m_InputSystemsAreShared)
+        {
+            SaveSharedBindingFile();
+        }
+        else
+        {
+            SaveBindingFile(device);
+        }
         PublishAllBindingsConfigured();
-        emit StatusMessageChanged(QString("Bound %1").arg(QString::fromStdString(name)));
+        emit StatusMessageChanged(QString("Bound %1 %2").arg(DescribeDevice(device), QString::fromStdString(name)));
     }
 
     void Controller::CompleteKeyCapture(
         const std::string& name,
+        const BindingDevice device,
         const ::PiSubmarine::Input::Api::IBinder::CaptureStatus status,
         std::unique_ptr<::PiSubmarine::Input::Api::IKeyBinding> binding)
     {
-        if (m_PendingCaptureName != name)
+        if (!m_PendingCapture.has_value() || m_PendingCapture->Name != name || m_PendingCapture->Device != device)
         {
             return;
         }
 
-        m_PendingCaptureName.clear();
-        emit CaptureTargetChanged({});
+        m_PendingCapture.reset();
+        emit CaptureTargetChanged({}, device);
         emit CaptureInProgressChanged(false);
 
         const auto bindingIt = m_BindingIndexByName.find(name);
@@ -292,13 +513,22 @@ namespace PiSubmarine::Operator::Station::Input
         }
 
         auto& state = m_Bindings.at(bindingIt->second);
-        state.Serialized = m_Serializer.Serialize(*binding);
-        state.KeyBinding.reset();
-        state.Key.reset();
-        RestoreBinding(state);
-        SaveBindingFile();
+        auto& deviceBinding = GetDeviceBinding(state, device);
+        deviceBinding.Serialized = GetInputSystem(device).Serializer.Serialize(*binding);
+        deviceBinding.KeyBinding.reset();
+        deviceBinding.Key.reset();
+        RestoreDeviceBinding(state, device);
+        UpdateProxy(state);
+        if (m_InputSystemsAreShared)
+        {
+            SaveSharedBindingFile();
+        }
+        else
+        {
+            SaveBindingFile(device);
+        }
         PublishAllBindingsConfigured();
-        emit StatusMessageChanged(QString("Bound %1").arg(QString::fromStdString(name)));
+        emit StatusMessageChanged(QString("Bound %1 %2").arg(DescribeDevice(device), QString::fromStdString(name)));
     }
 
     void Controller::PublishAllBindingsConfigured()
@@ -317,14 +547,20 @@ namespace PiSubmarine::Operator::Station::Input
     {
         for (const auto& binding : m_Bindings)
         {
+            const auto& keyboardBinding = GetDeviceBinding(binding, BindingDevice::Keyboard);
+            const auto& gamepadBinding = GetDeviceBinding(binding, BindingDevice::Gamepad);
+
             if (binding.Descriptor.Type == BindingType::Axis)
             {
-                if (binding.Axis == nullptr)
+                if (keyboardBinding.Axis == nullptr || gamepadBinding.Axis == nullptr)
                 {
                     return false;
                 }
+
+                continue;
             }
-            else if (binding.Key == nullptr)
+
+            if (keyboardBinding.Key == nullptr || gamepadBinding.Key == nullptr)
             {
                 return false;
             }
@@ -350,6 +586,31 @@ namespace PiSubmarine::Operator::Station::Input
         }
 
         return "Capture failed.";
+    }
+
+    QString Controller::DescribeDevice(const BindingDevice device)
+    {
+        return device == BindingDevice::Keyboard ? "keyboard" : "gamepad";
+    }
+
+    std::string Controller::EncodeDevice(const BindingDevice device)
+    {
+        return device == BindingDevice::Keyboard ? "keyboard" : "gamepad";
+    }
+
+    std::optional<BindingDevice> Controller::DecodeDevice(const std::string& token)
+    {
+        if (token == "keyboard")
+        {
+            return BindingDevice::Keyboard;
+        }
+
+        if (token == "gamepad")
+        {
+            return BindingDevice::Gamepad;
+        }
+
+        return std::nullopt;
     }
 
     std::string Controller::EncodeBytes(const std::vector<std::byte>& data)
@@ -394,10 +655,32 @@ namespace PiSubmarine::Operator::Station::Input
         result.reserve(text.size() / 2);
         for (std::size_t index = 0; index < text.size(); index += 2)
         {
-            const auto high = decodeNibble(text[index]);
-            const auto low = decodeNibble(text[index + 1]);
+            const auto high = decodeNibble(text.at(index));
+            const auto low = decodeNibble(text.at(index + 1));
             result.push_back(static_cast<std::byte>((high << 4) | low));
         }
         return result;
+    }
+
+    Controller::InputSystem& Controller::GetInputSystem(const BindingDevice device)
+    {
+        return device == BindingDevice::Keyboard ? m_KeyboardInputSystem : m_GamepadInputSystem;
+    }
+
+    const Controller::InputSystem& Controller::GetInputSystem(const BindingDevice device) const
+    {
+        return device == BindingDevice::Keyboard ? m_KeyboardInputSystem : m_GamepadInputSystem;
+    }
+
+    Controller::DeviceBindingState& Controller::GetDeviceBinding(BindingState& state, const BindingDevice device)
+    {
+        return device == BindingDevice::Keyboard ? state.Keyboard : state.Gamepad;
+    }
+
+    const Controller::DeviceBindingState& Controller::GetDeviceBinding(
+        const BindingState& state,
+        const BindingDevice device) const
+    {
+        return device == BindingDevice::Keyboard ? state.Keyboard : state.Gamepad;
     }
 }

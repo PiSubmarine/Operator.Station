@@ -10,27 +10,37 @@ namespace PiSubmarine::Operator::Station::Input::View
         Q_OBJECT
 
         Q_PROPERTY(QString name READ GetName CONSTANT)
-        Q_PROPERTY(QString hint READ GetHint NOTIFY HintChanged)
-        Q_PROPERTY(bool capturing READ GetCapturing NOTIFY CapturingChanged)
+        Q_PROPERTY(QString keyboardHint READ GetKeyboardHint NOTIFY KeyboardHintChanged)
+        Q_PROPERTY(QString gamepadHint READ GetGamepadHint NOTIFY GamepadHintChanged)
+        Q_PROPERTY(bool keyboardCapturing READ GetKeyboardCapturing NOTIFY KeyboardCapturingChanged)
+        Q_PROPERTY(bool gamepadCapturing READ GetGamepadCapturing NOTIFY GamepadCapturingChanged)
 
     public:
         explicit BindingEntryViewModel(QString name, QObject* parent = nullptr);
 
         [[nodiscard]] QString GetName() const;
-        [[nodiscard]] QString GetHint() const;
-        [[nodiscard]] bool GetCapturing() const;
+        [[nodiscard]] QString GetKeyboardHint() const;
+        [[nodiscard]] QString GetGamepadHint() const;
+        [[nodiscard]] bool GetKeyboardCapturing() const;
+        [[nodiscard]] bool GetGamepadCapturing() const;
 
     public slots:
-        void SetHint(const QString& hint);
-        void SetCapturing(bool capturing);
+        void SetKeyboardHint(const QString& hint);
+        void SetGamepadHint(const QString& hint);
+        void SetKeyboardCapturing(bool capturing);
+        void SetGamepadCapturing(bool capturing);
 
     signals:
-        void HintChanged();
-        void CapturingChanged();
+        void KeyboardHintChanged();
+        void GamepadHintChanged();
+        void KeyboardCapturingChanged();
+        void GamepadCapturingChanged();
 
     private:
         QString m_Name;
-        QString m_Hint = "Unbound";
-        bool m_Capturing = false;
+        QString m_KeyboardHint = "Unbound";
+        QString m_GamepadHint = "Unbound";
+        bool m_KeyboardCapturing = false;
+        bool m_GamepadCapturing = false;
     };
 }

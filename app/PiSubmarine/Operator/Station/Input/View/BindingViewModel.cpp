@@ -28,9 +28,9 @@ namespace PiSubmarine::Operator::Station::Input::View
         return m_CaptureInProgress;
     }
 
-    void BindingViewModel::Capture(const QString& name)
+    void BindingViewModel::Capture(const QString& name, const int device)
     {
-        emit RequestCapture(name);
+        emit RequestCapture(name, static_cast<BindingDevice>(device));
     }
 
     void BindingViewModel::CancelCapture()
@@ -38,15 +38,34 @@ namespace PiSubmarine::Operator::Station::Input::View
         emit RequestCancelCapture();
     }
 
-    void BindingViewModel::SetBindingHint(const QString& name, const QString& hint)
+    void BindingViewModel::SetBindingHint(const QString& name, const BindingDevice device, const QString& hint)
     {
         for (auto* entry : m_Entries)
         {
-            if (entry->GetName() == name)
+            if (entry->GetName() != name)
             {
-                entry->SetHint(hint);
-                return;
+                continue;
             }
+
+            if (device == BindingDevice::Keyboard)
+            {
+                entry->SetKeyboardHint(hint);
+            }
+            else
+            {
+                entry->SetGamepadHint(hint);
+            }
+            return;
+        }
+    }
+
+    void BindingViewModel::SetCaptureTarget(const QString& name, const BindingDevice device)
+    {
+        for (auto* entry : m_Entries)
+        {
+            const bool isTarget = entry->GetName() == name && !name.isEmpty();
+            entry->SetKeyboardCapturing(isTarget && device == BindingDevice::Keyboard);
+            entry->SetGamepadCapturing(isTarget && device == BindingDevice::Gamepad);
         }
     }
 
@@ -59,13 +78,5 @@ namespace PiSubmarine::Operator::Station::Input::View
 
         m_CaptureInProgress = captureInProgress;
         emit CaptureInProgressChanged();
-    }
-
-    void BindingViewModel::SetCaptureTarget(const QString& name)
-    {
-        for (auto* entry : m_Entries)
-        {
-            entry->SetCapturing(entry->GetName() == name && !name.isEmpty());
-        }
     }
 }

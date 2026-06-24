@@ -8,7 +8,7 @@ Rectangle {
     radius: Theme.panelRadius
     border.color: Theme.panelBorder
     border.width: 1
-    implicitWidth: 520
+    implicitWidth: 760
     implicitHeight: contentColumn.implicitHeight + 28
 
     TapHandler {
@@ -50,7 +50,15 @@ Rectangle {
                     }
 
                     Label {
-                        text: "Binding"
+                        text: "Keyboard"
+                        color: Theme.textColorH2
+                        font.bold: true
+                        Layout.fillWidth: true
+                        font.pixelSize: Theme.textFontSizeH2
+                    }
+
+                    Label {
+                        text: "Gamepad"
                         color: Theme.textColorH2
                         font.bold: true
                         Layout.fillWidth: true
@@ -63,6 +71,7 @@ Rectangle {
 
                     delegate: Rectangle {
                         required property var modelData
+                        property var entryData: modelData
 
                         width: tableColumn.width
                         implicitHeight: 40
@@ -76,25 +85,62 @@ Rectangle {
                             spacing: 8
 
                             Label {
-                                text: modelData.name
+                                text: entryData.name
                                 color: Theme.textColorH4
                                 Layout.preferredWidth: 120
                                 elide: Text.ElideRight
                                 font.pixelSize: Theme.textFontSizeH4
                             }
 
-                            Label {
-                                text: modelData.capturing ? "CAPTURING" : modelData.hint
-                                color: modelData.capturing ? Theme.textWarning : Theme.textColorH4
-                                Layout.fillWidth: true
-                                elide: Text.ElideRight
-                                font.pixelSize: Theme.textFontSizeH4
-                            }
-                        }
+                            Repeater {
+                                model: [
+                                    {
+                                        device: 0,
+                                        capturing: entryData.keyboardCapturing,
+                                        hint: entryData.keyboardHint
+                                    },
+                                    {
+                                        device: 1,
+                                        capturing: entryData.gamepadCapturing,
+                                        hint: entryData.gamepadHint
+                                    }
+                                ]
 
-                        TapHandler {
-                            enabled: !inputBindingViewModel.captureInProgress
-                            onTapped: inputBindingViewModel.Capture(modelData.name)
+                                delegate: Rectangle {
+                                    required property var modelData
+
+                                    Layout.fillWidth: true
+                                    implicitHeight: 24
+                                    radius: Theme.buttonRadius
+                                    border.width: 1
+                                    border.color: cellTapHandler.pressed ? Theme.buttonPressedBorder : Theme.panelBorder
+                                    color: cellTapHandler.pressed
+                                        ? Theme.buttonPressedBackground
+                                        : (cellHoverHandler.hovered ? Theme.buttonHoverBackground : Theme.panelBackground)
+
+                                    Label {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        text: modelData.capturing ? "CAPTURING" : modelData.hint
+                                        color: modelData.capturing ? Theme.textWarning : Theme.textColorH4
+                                        verticalAlignment: Text.AlignVCenter
+                                        elide: Text.ElideRight
+                                        font.pixelSize: Theme.textFontSizeH4
+                                    }
+
+                                    HoverHandler {
+                                        id: cellHoverHandler
+                                    }
+
+                                    TapHandler {
+                                        id: cellTapHandler
+                                        enabled: !inputBindingViewModel.captureInProgress
+                                        onTapped: inputBindingViewModel.Capture(
+                                            entryData.name,
+                                            parent.modelData.device)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

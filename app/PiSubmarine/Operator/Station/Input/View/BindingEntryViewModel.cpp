@@ -13,35 +13,67 @@ namespace PiSubmarine::Operator::Station::Input::View
         return m_Name;
     }
 
-    QString BindingEntryViewModel::GetHint() const
+    QString BindingEntryViewModel::GetKeyboardHint() const
     {
-        return m_Hint;
+        return m_KeyboardHint;
     }
 
-    bool BindingEntryViewModel::GetCapturing() const
+    QString BindingEntryViewModel::GetGamepadHint() const
     {
-        return m_Capturing;
+        return m_GamepadHint;
     }
 
-    void BindingEntryViewModel::SetHint(const QString& hint)
+    bool BindingEntryViewModel::GetKeyboardCapturing() const
     {
-        if (m_Hint == hint)
+        return m_KeyboardCapturing;
+    }
+
+    bool BindingEntryViewModel::GetGamepadCapturing() const
+    {
+        return m_GamepadCapturing;
+    }
+
+    void BindingEntryViewModel::SetKeyboardHint(const QString& hint)
+    {
+        if (m_KeyboardHint == hint)
         {
             return;
         }
 
-        m_Hint = hint;
-        emit HintChanged();
+        m_KeyboardHint = hint;
+        emit KeyboardHintChanged();
     }
 
-    void BindingEntryViewModel::SetCapturing(const bool capturing)
+    void BindingEntryViewModel::SetGamepadHint(const QString& hint)
     {
-        if (m_Capturing == capturing)
+        if (m_GamepadHint == hint)
         {
             return;
         }
 
-        m_Capturing = capturing;
-        emit CapturingChanged();
+        m_GamepadHint = hint;
+        emit GamepadHintChanged();
+    }
+
+    void BindingEntryViewModel::SetKeyboardCapturing(const bool capturing)
+    {
+        if (m_KeyboardCapturing == capturing)
+        {
+            return;
+        }
+
+        m_KeyboardCapturing = capturing;
+        emit KeyboardCapturingChanged();
+    }
+
+    void BindingEntryViewModel::SetGamepadCapturing(const bool capturing)
+    {
+        if (m_GamepadCapturing == capturing)
+        {
+            return;
+        }
+
+        m_GamepadCapturing = capturing;
+        emit GamepadCapturingChanged();
     }
 }

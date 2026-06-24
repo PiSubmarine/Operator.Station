@@ -86,9 +86,14 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Control/View/StatusViewModel.h
         PiSubmarine/Operator/Station/Control/View/ViewModel.cpp
         PiSubmarine/Operator/Station/Control/View/ViewModel.h
+        PiSubmarine/Operator/Station/Input/AxisMultiplexor.cpp
+        PiSubmarine/Operator/Station/Input/AxisMultiplexor.h
         PiSubmarine/Operator/Station/Input/BindingDescriptor.h
+        PiSubmarine/Operator/Station/Input/BindingDevice.h
         PiSubmarine/Operator/Station/Input/Controller.cpp
         PiSubmarine/Operator/Station/Input/Controller.h
+        PiSubmarine/Operator/Station/Input/KeyMultiplexor.cpp
+        PiSubmarine/Operator/Station/Input/KeyMultiplexor.h
         PiSubmarine/Operator/Station/Input/View/BindingPanel.qml
         PiSubmarine/Operator/Station/Input/View/BindingEntryViewModel.cpp
         PiSubmarine/Operator/Station/Input/View/BindingEntryViewModel.h

@@ -267,6 +267,8 @@ int main(int argc, char* argv[])
 
     QGuiApplication application(argc, argv);
     qRegisterMetaType<PiSubmarine::Operator::Station::Video::Status>("PiSubmarine::Operator::Station::Video::Status");
+    qRegisterMetaType<PiSubmarine::Operator::Station::Input::BindingDevice>(
+        "PiSubmarine::Operator::Station::Input::BindingDevice");
     qRegisterMetaType<PiSubmarine::Operator::Station::Composition::OptionalLeaseId>(
         "PiSubmarine::Operator::Station::Composition::OptionalLeaseId");
 
@@ -555,7 +557,8 @@ int main(int argc, char* argv[])
     }
 
     auto input = std::make_unique<PiSubmarine::Operator::Station::Composition::FakeInput>();
-    const auto inputBindingFilePath = std::filesystem::current_path() / "PiSubmarine.Operator.Station.InputBindings.txt";
+    const auto keyboardBindingFilePath = std::filesystem::current_path() / "PiSubmarine.Operator.Station.InputBindings.txt";
+    const auto gamepadBindingFilePath = keyboardBindingFilePath;
 
     std::unique_ptr<PiSubmarine::Operator::Station::Composition::ITelemetry> telemetry;
     try
@@ -632,10 +635,16 @@ int main(int argc, char* argv[])
         control->GetSink(),
         loggerFactory);
     auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
-        input->GetManager(),
-        input->GetBinder(),
-        input->GetSerializer(),
-        inputBindingFilePath,
+        PiSubmarine::Operator::Station::Input::Controller::InputSystem{
+            .Manager = input->GetManager(),
+            .Binder = input->GetBinder(),
+            .Serializer = input->GetSerializer(),
+            .BindingFilePath = keyboardBindingFilePath},
+        PiSubmarine::Operator::Station::Input::Controller::InputSystem{
+            .Manager = input->GetManager(),
+            .Binder = input->GetBinder(),
+            .Serializer = input->GetSerializer(),
+            .BindingFilePath = gamepadBindingFilePath},
         DefaultInputBindings);
     auto controllerTickRunner = std::make_unique<PiSubmarine::Operator::Station::Time::TickRunner>(
         *tickPeriod,
@@ -666,6 +675,11 @@ int main(int argc, char* argv[])
     if (!controllerTickRunner->AddTickable(*telemetryController).has_value())
     {
         SPDLOG_LOGGER_CRITICAL(logger, "Failed to add telemetry controller to controllers tick runner");
+        return 1;
+    }
+    if (!controllerTickRunner->AddTickable(*inputController).has_value())
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add input controller to controllers tick runner");
         return 1;
     }
     if (!controllerTickRunner->AddTickable(*controlController).has_value())
