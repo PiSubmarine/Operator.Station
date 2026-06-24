@@ -364,13 +364,18 @@ namespace PiSubmarine::Operator::Station::Input
                 device,
                 QString::fromStdString(deviceBinding.KeyBinding->GetHint()));
         }
-        catch (const std::exception&)
+        catch (const std::exception& exception)
         {
             deviceBinding.Serialized.clear();
             deviceBinding.AxisBinding.reset();
             deviceBinding.KeyBinding.reset();
             deviceBinding.Axis.reset();
             deviceBinding.Key.reset();
+            emit StatusMessageChanged(
+                QString("Failed to restore %1 %2 binding: %3")
+                    .arg(DescribeDevice(device),
+                         QString::fromStdString(state.Descriptor.Name),
+                         exception.what()));
             emit BindingHintChanged(QString::fromStdString(state.Descriptor.Name), device, "Unbound");
         }
     }
@@ -461,6 +466,12 @@ namespace PiSubmarine::Operator::Station::Input
 
         if (status != ::PiSubmarine::Input::Api::IBinder::CaptureStatus::Ok || binding == nullptr)
         {
+            if (status == ::PiSubmarine::Input::Api::IBinder::CaptureStatus::UnknownError)
+            {
+                emit StatusMessageChanged("Axis capture failed. Press two distinct keys.");
+                return;
+            }
+
             emit StatusMessageChanged(DescribeStatus(status));
             return;
         }

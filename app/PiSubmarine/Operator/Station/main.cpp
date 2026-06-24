@@ -46,6 +46,8 @@
 #include "PiSubmarine/Operator/Station/Control/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Input/BindingDescriptor.h"
 #include "PiSubmarine/Operator/Station/Input/Controller.h"
+#include "PiSubmarine/Operator/Station/Input/QtKeyboard/EventFilter.h"
+#include "PiSubmarine/Operator/Station/Input/QtKeyboard/System.h"
 #include "PiSubmarine/Operator/Station/Input/View/BindingViewModel.h"
 #include "PiSubmarine/Operator/Station/Logging/QtLog.h"
 #include "PiSubmarine/Operator/Station/Logging/SpdlogFactory.h"
@@ -558,9 +560,14 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    auto input = std::make_unique<PiSubmarine::Operator::Station::Composition::FakeInput>();
-    const auto keyboardBindingFilePath = std::filesystem::current_path() / "PiSubmarine.Operator.Station.InputBindings.txt";
-    const auto gamepadBindingFilePath = keyboardBindingFilePath;
+    auto keyboardInput = std::make_unique<PiSubmarine::Operator::Station::Input::QtKeyboard::System>();
+    auto keyboardInputEventFilter =
+        std::make_unique<PiSubmarine::Operator::Station::Input::QtKeyboard::EventFilter>(*keyboardInput);
+    application.installEventFilter(keyboardInputEventFilter.get());
+
+    auto gamepadInput = std::make_unique<PiSubmarine::Operator::Station::Composition::FakeInput>();
+    const auto keyboardBindingFilePath = std::filesystem::current_path() / "PiSubmarine.Operator.Station.KeyboardBindings.txt";
+    const auto gamepadBindingFilePath = std::filesystem::current_path() / "PiSubmarine.Operator.Station.GamepadBindings.txt";
 
     std::unique_ptr<PiSubmarine::Operator::Station::Composition::ITelemetry> telemetry;
     try
@@ -638,14 +645,14 @@ int main(int argc, char* argv[])
         loggerFactory);
     auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
         PiSubmarine::Operator::Station::Input::Controller::InputSystem{
-            .Manager = input->GetManager(),
-            .Binder = input->GetBinder(),
-            .Serializer = input->GetSerializer(),
+            .Manager = *keyboardInput,
+            .Binder = *keyboardInput,
+            .Serializer = *keyboardInput,
             .BindingFilePath = keyboardBindingFilePath},
         PiSubmarine::Operator::Station::Input::Controller::InputSystem{
-            .Manager = input->GetManager(),
-            .Binder = input->GetBinder(),
-            .Serializer = input->GetSerializer(),
+            .Manager = gamepadInput->GetManager(),
+            .Binder = gamepadInput->GetBinder(),
+            .Serializer = gamepadInput->GetSerializer(),
             .BindingFilePath = gamepadBindingFilePath},
         DefaultInputBindings);
     auto controllerTickRunner = std::make_unique<PiSubmarine::Operator::Station::Time::TickRunner>(
@@ -669,9 +676,14 @@ int main(int argc, char* argv[])
         SPDLOG_LOGGER_CRITICAL(logger, "Failed to add telemetry composition to controllers tick runner");
         return 1;
     }
-    if (!controllerTickRunner->AddTickable(*input).has_value())
+    if (!controllerTickRunner->AddTickable(*gamepadInput).has_value())
     {
         SPDLOG_LOGGER_CRITICAL(logger, "Failed to add input composition to controllers tick runner");
+        return 1;
+    }
+    if (!controllerTickRunner->AddTickable(*keyboardInput).has_value())
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Failed to add keyboard input system to controllers tick runner");
         return 1;
     }
     if (!controllerTickRunner->AddTickable(*telemetryController).has_value())
@@ -1034,7 +1046,7 @@ int main(int argc, char* argv[])
 
         video.reset();
         control.reset();
-        input.reset();
+        gamepadInput.reset();
 
         // Telemetry owns the UDP client that releases its lease in the destructor.
         // Destroy it before the lease worker shuts down so the release request can still be processed.

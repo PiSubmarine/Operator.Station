@@ -94,6 +94,10 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Input/Controller.h
         PiSubmarine/Operator/Station/Input/KeyMultiplexor.cpp
         PiSubmarine/Operator/Station/Input/KeyMultiplexor.h
+        PiSubmarine/Operator/Station/Input/QtKeyboard/EventFilter.cpp
+        PiSubmarine/Operator/Station/Input/QtKeyboard/EventFilter.h
+        PiSubmarine/Operator/Station/Input/QtKeyboard/System.cpp
+        PiSubmarine/Operator/Station/Input/QtKeyboard/System.h
         PiSubmarine/Operator/Station/Input/View/BindingPanel.qml
         PiSubmarine/Operator/Station/Input/View/BindingEntryViewModel.cpp
         PiSubmarine/Operator/Station/Input/View/BindingEntryViewModel.h
