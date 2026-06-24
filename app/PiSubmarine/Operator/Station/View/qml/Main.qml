@@ -62,7 +62,7 @@ ApplicationWindow {
                 anchors.left: parent.left
                 anchors.leftMargin: 24
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 12
+                spacing: 8
 
                 Loader {
                     source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Battery/BatteryPanel.qml"
@@ -102,9 +102,9 @@ ApplicationWindow {
                         width: parent.implicitWidth - 24
                         spacing: 6
 
-                        Loader { source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityOverlayRow.qml" }
                         Loader { source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Depth/DepthOverlayRow.qml" }
                         Loader { source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastOverlayRow.qml" }
+                        Loader { source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Proximity/ProximityOverlayRow.qml" }
                     }
                 }
 

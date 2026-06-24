@@ -15,6 +15,12 @@ namespace PiSubmarine::Operator::Station::Telemetry
             using Underlying = std::underlying_type_t<TEnum>;
             return (static_cast<Underlying>(value) & static_cast<Underlying>(flag)) != 0;
         }
+
+        [[nodiscard]] double ToSignedDriveEffortPercent(const ::PiSubmarine::Motor::Telemetry::Api::State& state)
+        {
+            const auto direction = static_cast<int>(state.Direction);
+            return static_cast<double>(state.DriveEffort) * 100.0 * static_cast<double>(direction);
+        }
     }
 
     MotorController::MotorController(::PiSubmarine::Motor::Telemetry::Api::IProvider& provider, QObject* parent)
@@ -38,7 +44,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
             m_HasSnapshot = true;
             emit SnapshotChanged(
                 ToQString(m_LastState.Operational),
-                static_cast<double>(m_LastState.DriveEffort) * 100.0,
+                ToSignedDriveEffortPercent(m_LastState),
                 HasFlag(m_LastState.ActiveFaults, ::PiSubmarine::Motor::Telemetry::Api::Faults::Overcurrent),
                 HasFlag(m_LastState.ActiveFaults, ::PiSubmarine::Motor::Telemetry::Api::Faults::Overtemperature),
                 HasFlag(m_LastState.ActiveWarnings, ::PiSubmarine::Motor::Telemetry::Api::Warnings::Temperature),
