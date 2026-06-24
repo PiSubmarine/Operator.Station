@@ -549,18 +549,14 @@ namespace PiSubmarine::Operator::Station::Input
         {
             const auto& keyboardBinding = GetDeviceBinding(binding, BindingDevice::Keyboard);
             const auto& gamepadBinding = GetDeviceBinding(binding, BindingDevice::Gamepad);
+            const bool hasKeyboardBinding = binding.Descriptor.Type == BindingType::Axis
+                ? keyboardBinding.Axis != nullptr
+                : keyboardBinding.Key != nullptr;
+            const bool hasGamepadBinding = binding.Descriptor.Type == BindingType::Axis
+                ? gamepadBinding.Axis != nullptr
+                : gamepadBinding.Key != nullptr;
 
-            if (binding.Descriptor.Type == BindingType::Axis)
-            {
-                if (keyboardBinding.Axis == nullptr || gamepadBinding.Axis == nullptr)
-                {
-                    return false;
-                }
-
-                continue;
-            }
-
-            if (keyboardBinding.Key == nullptr || gamepadBinding.Key == nullptr)
+            if (!hasKeyboardBinding && !hasGamepadBinding)
             {
                 return false;
             }

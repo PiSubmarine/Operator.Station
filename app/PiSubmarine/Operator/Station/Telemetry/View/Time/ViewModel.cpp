@@ -9,7 +9,7 @@ namespace PiSubmarine::Operator::Station::Telemetry::View::Time
 
     bool ViewModel::GetHasLease() const { return m_HasLease; }
     QString ViewModel::GetDisplayText() const { return m_DisplayText; }
-    QString ViewModel::GetBackgroundColor() const { return m_BackgroundColor; }
+    int ViewModel::GetFaultState() const { return static_cast<int>(m_FaultState); }
 
     void ViewModel::LeaseStateChanged(const ::PiSubmarine::Operator::Station::Composition::OptionalLeaseId& leaseId)
     {
@@ -23,16 +23,18 @@ namespace PiSubmarine::Operator::Station::Telemetry::View::Time
         emit SnapshotChanged();
     }
 
-    void ViewModel::SetSnapshot(const QString& displayText, const QString& backgroundColor)
+    void ViewModel::SetSnapshot(
+        const QString& displayText,
+        const ::PiSubmarine::Operator::Station::Telemetry::View::Time::FaultState faultState)
     {
         if (m_DisplayText == displayText &&
-            m_BackgroundColor == backgroundColor)
+            m_FaultState == faultState)
         {
             return;
         }
 
         m_DisplayText = displayText;
-        m_BackgroundColor = backgroundColor;
+        m_FaultState = faultState;
         emit SnapshotChanged();
     }
 }

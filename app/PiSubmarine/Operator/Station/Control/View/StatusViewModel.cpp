@@ -7,19 +7,19 @@ namespace PiSubmarine::Operator::Station::Control::View
     {
     }
 
-    QString StatusViewModel::GetBackgroundColor() const
+    QString StatusViewModel::GetStatusKind() const
     {
         if (!m_HasLease)
         {
-            return "#8f1d1d";
+            return "fault";
         }
 
         if (!m_AllBindingsConfigured)
         {
-            return "#b78a1e";
+            return "warning";
         }
 
-        return "#1d7f3b";
+        return "normal";
     }
 
     bool StatusViewModel::GetBindingDialogVisible() const

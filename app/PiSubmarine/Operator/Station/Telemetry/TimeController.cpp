@@ -22,7 +22,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         if (!hasLease)
         {
             m_HadLease = false;
-            Publish("NO LEASE", "#8f1d1d");
+            Publish("NO LEASE", SelectFaultState(std::chrono::nanoseconds::zero(), false));
             return;
         }
 
@@ -44,7 +44,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
 
         const auto displayText = FormatUptime(m_LastTelemetryUptime.value_or(std::chrono::nanoseconds::zero()));
         const auto ageSinceChange = controllerUptime - m_LastTelemetryChangeAt;
-        Publish(displayText, SelectBackgroundColor(ageSinceChange));
+        Publish(displayText, SelectFaultState(ageSinceChange, true));
     }
 
     void TimeController::LeaseStateChanged(const ::PiSubmarine::Operator::Station::Composition::OptionalLeaseId& leaseId)
@@ -69,33 +69,44 @@ namespace PiSubmarine::Operator::Station::Telemetry
             .arg(seconds, 2, 10, QChar('0'));
     }
 
-    QString TimeController::SelectBackgroundColor(const std::chrono::nanoseconds ageSinceChange)
+    ::PiSubmarine::Operator::Station::Telemetry::View::Time::FaultState TimeController::SelectFaultState(
+        const std::chrono::nanoseconds ageSinceChange,
+        const bool hasLease)
     {
+        using ::PiSubmarine::Operator::Station::Telemetry::View::Time::FaultState;
+
+        if (!hasLease)
+        {
+            return FaultState::Fault;
+        }
+
         if (ageSinceChange > ErrorThreshold)
         {
-            return "#8f1d1d";
+            return FaultState::Fault;
         }
 
         if (ageSinceChange > WarningThreshold)
         {
-            return "#b78a1e";
+            return FaultState::Warning;
         }
 
-        return "#123247";
+        return FaultState::Normal;
     }
 
-    void TimeController::Publish(const QString& displayText, const QString& backgroundColor)
+    void TimeController::Publish(
+        const QString& displayText,
+        const ::PiSubmarine::Operator::Station::Telemetry::View::Time::FaultState faultState)
     {
         if (m_HasSnapshot &&
             m_LastDisplayText == displayText &&
-            m_LastBackgroundColor == backgroundColor)
+            m_LastFaultState == faultState)
         {
             return;
         }
 
         m_HasSnapshot = true;
         m_LastDisplayText = displayText;
-        m_LastBackgroundColor = backgroundColor;
-        emit SnapshotChanged(displayText, backgroundColor);
+        m_LastFaultState = faultState;
+        emit SnapshotChanged(displayText, faultState);
     }
 }

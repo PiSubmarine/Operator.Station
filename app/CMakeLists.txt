@@ -148,6 +148,7 @@ add_library(${PISUBMARINE_MODULE_NAME}.AppCommon STATIC
         PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Proximity/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Time/TimePanel.qml
+        PiSubmarine/Operator/Station/Telemetry/View/Time/FaultState.h
         PiSubmarine/Operator/Station/Telemetry/View/Time/ViewModel.cpp
         PiSubmarine/Operator/Station/Telemetry/View/Time/ViewModel.h
         PiSubmarine/Operator/Station/Telemetry/View/Video/ViewModel.cpp

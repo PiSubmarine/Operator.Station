@@ -11,14 +11,14 @@ namespace PiSubmarine::Operator::Station::Control::View
     {
         Q_OBJECT
 
-        Q_PROPERTY(QString backgroundColor READ GetBackgroundColor NOTIFY StateChanged)
+        Q_PROPERTY(QString statusKind READ GetStatusKind NOTIFY StateChanged)
         Q_PROPERTY(bool bindingDialogVisible READ GetBindingDialogVisible NOTIFY StateChanged)
         Q_PROPERTY(QString symbol READ GetSymbol CONSTANT)
 
     public:
         explicit StatusViewModel(QObject* parent = nullptr);
 
-        [[nodiscard]] QString GetBackgroundColor() const;
+        [[nodiscard]] QString GetStatusKind() const;
         [[nodiscard]] bool GetBindingDialogVisible() const;
         [[nodiscard]] QString GetSymbol() const;
 

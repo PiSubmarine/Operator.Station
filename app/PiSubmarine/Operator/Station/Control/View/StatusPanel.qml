@@ -3,11 +3,16 @@ import QtQuick.Controls
 import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 Rectangle {
-    color: controlStatusViewModel.backgroundColor
+    readonly property bool isFault: controlStatusViewModel.statusKind === "fault"
+    readonly property bool isWarning: controlStatusViewModel.statusKind === "warning"
+
+    color: isFault
+        ? Theme.panelBackgroundFault
+        : (isWarning ? Theme.panelBackgroundWarning : Theme.panelBackground)
     radius: Theme.panelRadius
-    border.color: controlStatusViewModel.backgroundColor === Theme.panelBackgroundFault
+    border.color: isFault
         ? Theme.panelBorderFault
-        : (controlStatusViewModel.backgroundColor === Theme.panelBackgroundWarning
+        : (isWarning
             ? Theme.panelBorderWarning
             : Theme.panelBorder)
     border.width: 1

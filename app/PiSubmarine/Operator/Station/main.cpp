@@ -269,6 +269,8 @@ int main(int argc, char* argv[])
     qRegisterMetaType<PiSubmarine::Operator::Station::Video::Status>("PiSubmarine::Operator::Station::Video::Status");
     qRegisterMetaType<PiSubmarine::Operator::Station::Input::BindingDevice>(
         "PiSubmarine::Operator::Station::Input::BindingDevice");
+    qRegisterMetaType<PiSubmarine::Operator::Station::Telemetry::View::Time::FaultState>(
+        "PiSubmarine::Operator::Station::Telemetry::View::Time::FaultState");
     qRegisterMetaType<PiSubmarine::Operator::Station::Composition::OptionalLeaseId>(
         "PiSubmarine::Operator::Station::Composition::OptionalLeaseId");
 

@@ -3,11 +3,16 @@ import QtQuick.Controls
 import "qrc:/PiSubmarine/Operator/Station/View/Theme.js" as Theme
 
 Rectangle {
-    color: timeTelemetryViewModel.backgroundColor
+    readonly property bool isFault: timeTelemetryViewModel.faultState === 2
+    readonly property bool isWarning: timeTelemetryViewModel.faultState === 1
+
+    color: isFault
+        ? Theme.panelBackgroundFault
+        : (isWarning ? Theme.panelBackgroundWarning : Theme.panelBackground)
     radius: Theme.panelRadius
-    border.color: timeTelemetryViewModel.backgroundColor === Theme.panelBackgroundFault
+    border.color: isFault
         ? Theme.panelBorderFault
-        : Theme.panelBorder
+        : (isWarning ? Theme.panelBorderWarning : Theme.panelBorder)
     border.width: 1
     implicitWidth: contentRow.implicitWidth + 24
     implicitHeight: contentRow.implicitHeight + 14
