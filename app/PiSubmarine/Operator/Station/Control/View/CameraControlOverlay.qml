@@ -9,7 +9,7 @@ Rectangle {
     border.color: Theme.panelBorder
     border.width: 1
     implicitWidth: 220
-    implicitHeight: 180
+    implicitHeight: cameraColumn.implicitHeight + 24
 
     component StateButton: Rectangle {
         property string buttonText: ""
@@ -42,6 +42,7 @@ Rectangle {
     }
 
     ColumnLayout {
+        id: cameraColumn
         anchors.fill: parent
         anchors.margins: 12
         spacing: 10
@@ -145,6 +146,24 @@ Rectangle {
                 buttonText: "HQ"
                 active: controlViewModel.streamProfile === 2
                 onPressed: controlViewModel.SetHighQualityStreamProfile()
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+
+            Label {
+                text: "PIT"
+                color: Theme.textColorH3
+                font.pixelSize: Theme.textFontSizeH3
+                font.bold: true
+            }
+
+            Label {
+                text: controlViewModel.gimbalPitchDegrees.toFixed(1) + " deg"
+                color: Theme.textColorH4
+                font.pixelSize: Theme.textFontSizeH4
+                font.bold: true
             }
         }
     }

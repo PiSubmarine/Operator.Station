@@ -75,6 +75,7 @@
 #include "PiSubmarine/Operator/Station/Video/View/StatusOverlayViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/View/ViewModel.h"
 #include "PiSubmarine/Operator/Station/Video/View/VideoSurfaceItem.h"
+#include "PiSubmarine/Degrees.h"
 #include "PiSubmarine/Udp/Api/Endpoint.h"
 
 namespace
@@ -103,12 +104,19 @@ namespace
     constexpr std::size_t ControlReceiveQueueCapacity = 1;
     constexpr std::size_t TelemetryReceiveQueueCapacity = 16;
     constexpr std::size_t DefaultTelemetryMotorCount = 4;
+    constexpr double DefaultLampIntensityChangeSpeedPerSecond = 0.25;
+    constexpr PiSubmarine::Degrees DefaultGimbalPitchChangeSpeed{45.0};
+    constexpr PiSubmarine::Degrees DefaultMinimumGimbalPitch{-90.0};
+    constexpr PiSubmarine::Degrees DefaultMaximumGimbalPitch{90.0};
+    constexpr double DefaultBallastPositionChangeSpeedPerSecond = 0.1;
+    constexpr double DefaultDepthTargetChangeSpeedMetersPerSecond = 0.25;
     const std::vector<PiSubmarine::Operator::Station::Input::BindingDescriptor> DefaultInputBindings{
         {.Name = "Surge", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
         {.Name = "Yaw", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
         {.Name = "Ballast", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
         {.Name = "Lamp", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
-        {.Name = "Hold Position", .Type = PiSubmarine::Operator::Station::Input::BindingType::Key}
+        {.Name = "Gimbal Pitch", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
+        {.Name = "Gimbal Center", .Type = PiSubmarine::Operator::Station::Input::BindingType::Key}
     };
 
     [[nodiscard]] std::optional<spdlog::level::level_enum> ParseLogLevel(const QString& value)
@@ -640,8 +648,16 @@ int main(int argc, char* argv[])
         *timeTelemetryController,
         *videoStatusTelemetryController,
         loggerFactory);
+    const PiSubmarine::Operator::Station::Control::Controller::Config controlControllerConfig{
+        .LampIntensityChangeSpeedPerSecond = DefaultLampIntensityChangeSpeedPerSecond,
+        .GimbalPitchChangeSpeed = DefaultGimbalPitchChangeSpeed,
+        .MinimumGimbalPitch = DefaultMinimumGimbalPitch,
+        .MaximumGimbalPitch = DefaultMaximumGimbalPitch,
+        .BallastPositionChangeSpeedPerSecond = DefaultBallastPositionChangeSpeedPerSecond,
+        .DepthTargetChangeSpeedMetersPerSecond = DefaultDepthTargetChangeSpeedMetersPerSecond};
     auto controlController = std::make_unique<PiSubmarine::Operator::Station::Control::Controller>(
         control->GetSink(),
+        controlControllerConfig,
         loggerFactory);
     auto inputController = std::make_unique<PiSubmarine::Operator::Station::Input::Controller>(
         PiSubmarine::Operator::Station::Input::Controller::InputSystem{
@@ -886,6 +902,12 @@ int main(int argc, char* argv[])
         Qt::QueuedConnection);
     QObject::connect(
         controlController.get(),
+        &PiSubmarine::Operator::Station::Control::Controller::GimbalIntentChanged,
+        &controlViewModel,
+        &PiSubmarine::Operator::Station::Control::View::ViewModel::SetGimbalPitchDegrees,
+        Qt::QueuedConnection);
+    QObject::connect(
+        controlController.get(),
         &PiSubmarine::Operator::Station::Control::Controller::ModeIntentChanged,
         &controlViewModel,
         &PiSubmarine::Operator::Station::Control::View::ViewModel::SetModeIntent,
@@ -956,6 +978,11 @@ int main(int argc, char* argv[])
             if (name == "Lamp")
             {
                 control->SetLampAxis(axis);
+                return;
+            }
+            if (name == "Gimbal Pitch")
+            {
+                control->SetGimbalPitchAxis(axis);
             }
         });
     QObject::connect(
@@ -964,9 +991,9 @@ int main(int argc, char* argv[])
         controlController.get(),
         [control = controlController.get()](const QString& name, ::PiSubmarine::Input::Api::IKey* key)
         {
-            if (name == "Hold Position")
+            if (name == "Gimbal Center")
             {
-                control->SetHoldPositionKey(key);
+                control->SetGimbalCenterKey(key);
             }
         });
 

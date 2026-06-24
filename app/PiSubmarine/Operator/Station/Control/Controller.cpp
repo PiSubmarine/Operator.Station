@@ -1,5 +1,6 @@
 #include "PiSubmarine/Operator/Station/Control/Controller.h"
 
+#include <chrono>
 #include <memory>
 
 #include <spdlog/spdlog.h>
@@ -15,12 +16,18 @@ namespace PiSubmarine::Operator::Station::Control
 {
     Controller::Controller(
         ::PiSubmarine::Control::Api::Input::ISink& sink,
+        const Config& config,
         PiSubmarine::Logging::Api::IFactory& loggerFactory,
         QObject* parent)
         : QObject(parent)
         , m_Sink(sink)
+        , m_Config(config)
         , m_Logger(loggerFactory.CreateLogger("Operator.Station.Control.Controller"))
     {
+        if (m_Config.MinimumGimbalPitch.Value > m_Config.MaximumGimbalPitch.Value)
+        {
+            std::swap(m_Config.MinimumGimbalPitch, m_Config.MaximumGimbalPitch);
+        }
     }
 
     double Controller::ClampLampIntensity(const double value)
@@ -33,78 +40,110 @@ namespace PiSubmarine::Operator::Station::Control
         return std::clamp(value, 0.0, 1.0);
     }
 
-    double Controller::ReadLampAxisIntensity() const
+    double Controller::ClampNonNegative(const double value)
     {
-        if (m_LampAxis == nullptr)
+        return std::max(value, 0.0);
+    }
+
+    double Controller::ReadAxisValue(const ::PiSubmarine::Input::Api::IAxis* axis)
+    {
+        if (axis == nullptr)
         {
             return 0.0;
         }
 
-        return ClampLampIntensity((static_cast<double>(m_LampAxis->GetValue()) + 1.0) * 0.5);
+        return static_cast<double>(axis->GetValue());
     }
 
-    double Controller::ReadBallastAxisPosition() const
+    Degrees Controller::ClampGimbalPitch(const Degrees value) const
     {
-        if (m_BallastAxis == nullptr)
-        {
-            return m_DesiredBallastPosition;
-        }
-
-        return ClampNormalizedValue((static_cast<double>(m_BallastAxis->GetValue()) + 1.0) * 0.5);
+        return Degrees(std::clamp(
+            value.Value,
+            m_Config.MinimumGimbalPitch.Value,
+            m_Config.MaximumGimbalPitch.Value));
     }
 
-    void Controller::Tick(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&)
+    void Controller::Tick(const std::chrono::nanoseconds&, const std::chrono::nanoseconds& deltaTime)
     {
+        const auto deltaSeconds = std::chrono::duration<double>(deltaTime).count();
+
         if (m_LampAxis != nullptr)
         {
-            const auto lampAxisIntensity = ReadLampAxisIntensity();
-            if (!m_HasLampAxisSnapshot || lampAxisIntensity != m_LastLampAxisIntensity)
+            const auto nextLampIntensity = ClampLampIntensity(
+                m_DesiredLampIntensity +
+                ReadAxisValue(m_LampAxis) * m_Config.LampIntensityChangeSpeedPerSecond * deltaSeconds);
+            if (nextLampIntensity != m_DesiredLampIntensity)
             {
-                m_LastLampAxisIntensity = lampAxisIntensity;
-                m_HasLampAxisSnapshot = true;
-                m_LastLampInputSource = LampInputSource::Axis;
+                m_DesiredLampIntensity = nextLampIntensity;
+                emit LampIntentChanged(m_DesiredLampIntensity);
+            }
+        }
 
-                if (m_DesiredLampIntensity != lampAxisIntensity)
+        if (m_GimbalPitchAxis != nullptr)
+        {
+            const auto nextGimbalPitch = ClampGimbalPitch(
+                m_DesiredGimbalPitch +
+                Degrees(ReadAxisValue(m_GimbalPitchAxis) * m_Config.GimbalPitchChangeSpeed.Value * deltaSeconds));
+            if (nextGimbalPitch != m_DesiredGimbalPitch)
+            {
+                m_DesiredGimbalPitch = nextGimbalPitch;
+                emit GimbalIntentChanged(m_DesiredGimbalPitch.Value);
+            }
+        }
+
+        if (m_GimbalCenterKey != nullptr)
+        {
+            const auto gimbalCenterPressed =
+                m_GimbalCenterKey->GetState() == ::PiSubmarine::Input::Api::KeyState::Pressed;
+            if (!m_HasGimbalCenterKeySnapshot || gimbalCenterPressed != m_LastGimbalCenterKeyState)
+            {
+                m_LastGimbalCenterKeyState = gimbalCenterPressed;
+                m_HasGimbalCenterKeySnapshot = true;
+
+                if (gimbalCenterPressed && m_DesiredGimbalPitch.Value != 0.0)
                 {
-                    m_DesiredLampIntensity = lampAxisIntensity;
-                    emit LampIntentChanged(m_DesiredLampIntensity);
+                    m_DesiredGimbalPitch = Degrees{0.0};
+                    emit GimbalIntentChanged(m_DesiredGimbalPitch.Value);
                 }
             }
         }
 
         if (m_BallastAxis != nullptr)
         {
-            const auto ballastAxisPosition = ReadBallastAxisPosition();
-            if (!m_HasBallastAxisSnapshot || ballastAxisPosition != m_LastBallastAxisPosition)
+            const auto ballastAxisValue = ReadAxisValue(m_BallastAxis);
+            if (ballastAxisValue != 0.0)
             {
-                m_LastBallastAxisPosition = ballastAxisPosition;
-                m_HasBallastAxisSnapshot = true;
+                auto verticalIntentChanged = false;
 
-                if (m_DesiredBallastPosition != ballastAxisPosition)
+                if (m_VerticalMode == VerticalMode::SetBallastPosition)
                 {
-                    m_DesiredBallastPosition = ballastAxisPosition;
+                    const auto nextBallastPosition = ClampNormalizedValue(
+                        m_DesiredBallastPosition +
+                        ballastAxisValue * m_Config.BallastPositionChangeSpeedPerSecond * deltaSeconds);
+                    if (nextBallastPosition != m_DesiredBallastPosition)
+                    {
+                        m_DesiredBallastPosition = nextBallastPosition;
+                        verticalIntentChanged = true;
+                    }
+                }
+                else if (m_VerticalMode == VerticalMode::SetDepthTarget)
+                {
+                    const auto nextDepthTargetMeters = ClampNonNegative(
+                        m_DesiredDepthTargetMeters +
+                        ballastAxisValue * m_Config.DepthTargetChangeSpeedMetersPerSecond * deltaSeconds);
+                    if (nextDepthTargetMeters != m_DesiredDepthTargetMeters)
+                    {
+                        m_DesiredDepthTargetMeters = nextDepthTargetMeters;
+                        verticalIntentChanged = true;
+                    }
+                }
+
+                if (verticalIntentChanged)
+                {
                     emit VerticalIntentChanged(
                         static_cast<int>(m_VerticalMode),
                         m_DesiredBallastPosition,
                         m_DesiredDepthTargetMeters);
-                }
-            }
-        }
-
-        if (m_HoldPositionKey != nullptr)
-        {
-            const auto holdPositionPressed =
-                m_HoldPositionKey->GetState() == ::PiSubmarine::Input::Api::KeyState::Pressed;
-            if (!m_HasHoldPositionKeySnapshot || holdPositionPressed != m_LastHoldPositionKeyState)
-            {
-                m_LastHoldPositionKeyState = holdPositionPressed;
-                m_HasHoldPositionKeySnapshot = true;
-                m_LastModeInputSource = ModeInputSource::Key;
-
-                if (m_DesiredHoldPosition != holdPositionPressed)
-                {
-                    m_DesiredHoldPosition = holdPositionPressed;
-                    emit ModeIntentChanged(m_DesiredHoldPosition);
                 }
             }
         }
@@ -131,13 +170,15 @@ namespace PiSubmarine::Operator::Station::Control
                         NormalizedFraction(m_DesiredBallastPosition))
                     : ::PiSubmarine::Control::Vertical::Api::Command::SetDepthTargetTo(
                         Meters{m_DesiredDepthTargetMeters}),
+            .GimbalTarget = std::optional(::PiSubmarine::Control::Gimbal::Api::Command::Create(
+                m_DesiredGimbalPitch.ToRadians())),
             .LampIntensity = ::PiSubmarine::Control::Lamp::Api::Command::Create(
                 NormalizedFraction(lampIntensity)),
             .VideoControl = m_IsCameraEnabled
                 ? std::optional(::PiSubmarine::Control::Video::Api::Command::Enable(
                     m_StreamProfile,
                     m_IsAutoFocusEnabled
-                        ? ::PiSubmarine::Control::Video::Api::FocusMode{::PiSubmarine::Control::Video::Api::AutoFocus{}}
+                    ? ::PiSubmarine::Control::Video::Api::FocusMode{::PiSubmarine::Control::Video::Api::AutoFocus{}}
                         : ::PiSubmarine::Control::Video::Api::FocusMode{
                             ::PiSubmarine::Control::Video::Api::ManualFocus{
                                 .Position = NormalizedFraction(m_ManualFocusPosition)}}))
@@ -154,6 +195,12 @@ namespace PiSubmarine::Operator::Station::Control
                 m_IsAutoFocusEnabled,
                 m_ManualFocusPosition,
                 static_cast<int>(m_StreamProfile));
+        }
+
+        if (!m_HasPublishedGimbalIntent)
+        {
+            m_HasPublishedGimbalIntent = true;
+            emit GimbalIntentChanged(m_DesiredGimbalPitch.Value);
         }
 
         if (!m_HasPublishedModeIntent)
@@ -181,13 +228,12 @@ namespace PiSubmarine::Operator::Station::Control
     void Controller::LampChangeIntensity(const double step)
     {
         const auto nextLampIntensity = ClampLampIntensity(m_DesiredLampIntensity + step);
-        if (m_DesiredLampIntensity == nextLampIntensity && m_LastLampInputSource == LampInputSource::Ui)
+        if (m_DesiredLampIntensity == nextLampIntensity)
         {
             return;
         }
 
         m_DesiredLampIntensity = nextLampIntensity;
-        m_LastLampInputSource = LampInputSource::Ui;
         emit LampIntentChanged(m_DesiredLampIntensity);
     }
 
@@ -206,22 +252,26 @@ namespace PiSubmarine::Operator::Station::Control
     void Controller::SetBallastAxis(::PiSubmarine::Input::Api::IAxis* axis)
     {
         m_BallastAxis = axis;
-        m_HasBallastAxisSnapshot = false;
         SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Ballast'");
     }
 
     void Controller::SetLampAxis(::PiSubmarine::Input::Api::IAxis* axis)
     {
         m_LampAxis = axis;
-        m_HasLampAxisSnapshot = false;
         SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Lamp'");
     }
 
-    void Controller::SetHoldPositionKey(::PiSubmarine::Input::Api::IKey* key)
+    void Controller::SetGimbalPitchAxis(::PiSubmarine::Input::Api::IAxis* axis)
     {
-        m_HoldPositionKey = key;
-        m_HasHoldPositionKeySnapshot = false;
-        SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Hold Position'");
+        m_GimbalPitchAxis = axis;
+        SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Gimbal Pitch'");
+    }
+
+    void Controller::SetGimbalCenterKey(::PiSubmarine::Input::Api::IKey* key)
+    {
+        m_GimbalCenterKey = key;
+        m_HasGimbalCenterKeySnapshot = false;
+        SPDLOG_LOGGER_INFO(m_Logger, "Bound input path 'Gimbal Center'");
     }
 
     void Controller::EnableCamera()
@@ -315,25 +365,23 @@ namespace PiSubmarine::Operator::Station::Control
 
     void Controller::SetManualMode()
     {
-        if (!m_DesiredHoldPosition && m_LastModeInputSource == ModeInputSource::Ui)
+        if (!m_DesiredHoldPosition)
         {
             return;
         }
 
         m_DesiredHoldPosition = false;
-        m_LastModeInputSource = ModeInputSource::Ui;
         emit ModeIntentChanged(false);
     }
 
     void Controller::SetHoldPositionMode()
     {
-        if (m_DesiredHoldPosition && m_LastModeInputSource == ModeInputSource::Ui)
+        if (m_DesiredHoldPosition)
         {
             return;
         }
 
         m_DesiredHoldPosition = true;
-        m_LastModeInputSource = ModeInputSource::Ui;
         emit ModeIntentChanged(true);
     }
 

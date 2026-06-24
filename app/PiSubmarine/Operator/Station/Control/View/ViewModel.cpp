@@ -12,6 +12,7 @@ namespace PiSubmarine::Operator::Station::Control::View
     bool ViewModel::GetAutoFocusEnabled() const { return m_AutoFocusEnabled; }
     double ViewModel::GetManualFocusPosition() const { return m_ManualFocusPosition; }
     int ViewModel::GetStreamProfile() const { return m_StreamProfile; }
+    double ViewModel::GetGimbalPitchDegrees() const { return m_GimbalPitchDegrees; }
     bool ViewModel::GetHoldPositionMode() const { return m_HoldPositionMode; }
     int ViewModel::GetVerticalMode() const { return m_VerticalMode; }
     double ViewModel::GetBallastPosition() const { return m_BallastPosition; }
@@ -96,6 +97,17 @@ namespace PiSubmarine::Operator::Station::Control::View
         m_ManualFocusPosition = focusPosition;
         m_StreamProfile = streamProfile;
         emit CameraIntentChanged();
+    }
+
+    void ViewModel::SetGimbalPitchDegrees(const double pitchDegrees)
+    {
+        if (m_GimbalPitchDegrees == pitchDegrees)
+        {
+            return;
+        }
+
+        m_GimbalPitchDegrees = pitchDegrees;
+        emit GimbalIntentChanged();
     }
 
     void ViewModel::SetManualMode()
