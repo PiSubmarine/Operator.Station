@@ -7,6 +7,7 @@
 #include <spdlog/logger.h>
 #include <spdlog/sinks/null_sink.h>
 
+#include "PiSubmarine/Ballast/BallastFillFraction.h"
 #include "PiSubmarine/Control/Api/Input/ISinkMock.h"
 #include "PiSubmarine/Control/Vertical/Api/Command.h"
 #include "PiSubmarine/Input/Fake/Axis.h"

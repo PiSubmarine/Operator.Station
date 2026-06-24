@@ -7,6 +7,7 @@
 
 #include "PiSubmarine/Control/Api/Input/Mode/Request.h"
 #include "PiSubmarine/Control/Api/Input/OperatorCommand.h"
+#include "PiSubmarine/Ballast/BallastFillFraction.h"
 #include "PiSubmarine/Control/Horizontal/Api/Command.h"
 #include "PiSubmarine/Control/Lamp/Api/Command.h"
 #include "PiSubmarine/Control/Vertical/Api/Command.h"
@@ -167,7 +168,8 @@ namespace PiSubmarine::Operator::Station::Control
                 ? ::PiSubmarine::Control::Vertical::Api::Command::KeepCurrentValue()
                 : m_VerticalMode == VerticalMode::SetBallastPosition
                     ? ::PiSubmarine::Control::Vertical::Api::Command::SetBallastPositionTo(
-                        NormalizedFraction(m_DesiredBallastPosition))
+                        ::PiSubmarine::Ballast::BallastFillFraction{
+                            ::PiSubmarine::NormalizedFraction{m_DesiredBallastPosition}})
                     : ::PiSubmarine::Control::Vertical::Api::Command::SetDepthTargetTo(
                         Meters{m_DesiredDepthTargetMeters}),
             .GimbalTarget = std::optional(::PiSubmarine::Control::Gimbal::Api::Command::Create(

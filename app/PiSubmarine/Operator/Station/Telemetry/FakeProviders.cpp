@@ -91,7 +91,8 @@ namespace PiSubmarine::Operator::Station::Telemetry
                 ++m_Tick;
                 const auto cycle = static_cast<double>(m_Tick % 100) / 100.0;
                 return ::PiSubmarine::Ballast::Telemetry::Api::State{
-                    .Position = NormalizedFraction(cycle)};
+                    .Position = ::PiSubmarine::Ballast::BallastFillFraction{
+                        ::PiSubmarine::NormalizedFraction{cycle}}};
             }
 
         private:
