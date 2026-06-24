@@ -34,11 +34,11 @@ namespace PiSubmarine::Operator::Station::Control
 
     public slots:
         void LampChangeIntensity(double step);
-        void SetSurgeAxis(::PiSubmarine::Input::Api::IAxis* axis);
-        void SetYawAxis(::PiSubmarine::Input::Api::IAxis* axis);
-        void SetBallastAxis(::PiSubmarine::Input::Api::IAxis* axis);
-        void SetLampAxis(::PiSubmarine::Input::Api::IAxis* axis);
-        void SetHoldPositionKey(::PiSubmarine::Input::Api::IKey* key);
+        void SetSurgeAxis(PiSubmarine::Input::Api::IAxis* axis);
+        void SetYawAxis(PiSubmarine::Input::Api::IAxis* axis);
+        void SetBallastAxis(PiSubmarine::Input::Api::IAxis* axis);
+        void SetLampAxis(PiSubmarine::Input::Api::IAxis* axis);
+        void SetHoldPositionKey(PiSubmarine::Input::Api::IKey* key);
 
     signals:
         void LampIntentChanged(double lampIntensity);
