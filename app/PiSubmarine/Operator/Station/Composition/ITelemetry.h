@@ -31,6 +31,7 @@ namespace PiSubmarine::Operator::Station::Composition
 		[[nodiscard]] virtual ::PiSubmarine::Battery::Telemetry::Api::IProvider& GetBattery() = 0;
 		[[nodiscard]] virtual ::PiSubmarine::Depth::Telemetry::Api::IProvider& GetDepth() = 0;
 		[[nodiscard]] virtual ::PiSubmarine::Lamp::Telemetry::Api::IProvider& GetLamp() = 0;
+		[[nodiscard]] virtual ::PiSubmarine::Motor::Telemetry::Api::IProvider& GetBallastMotor() = 0;
 		[[nodiscard]] virtual std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>>
 		GetMotors() = 0;
 		[[nodiscard]] virtual ::PiSubmarine::Proximity::Telemetry::Api::IProvider& GetProximity() = 0;

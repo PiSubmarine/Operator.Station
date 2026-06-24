@@ -197,6 +197,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         FakeProviders providers;
         providers.Ballast = std::make_unique<FakeBallastProvider>();
         providers.Lamp = std::make_unique<FakeLampProvider>();
+        providers.BallastMotor = std::make_unique<FakeMotorProvider>(29);
         providers.Battery = std::make_unique<FakeBatteryProvider>();
         providers.Depth = std::make_unique<FakeDepthProvider>();
         providers.Motors.reserve(motorCount);

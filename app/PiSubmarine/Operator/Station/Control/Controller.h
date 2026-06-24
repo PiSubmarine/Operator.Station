@@ -32,8 +32,8 @@ namespace PiSubmarine::Operator::Station::Control
             Degrees GimbalPitchChangeSpeed = Degrees{45.0};
             Degrees MinimumGimbalPitch = Degrees{-90.0};
             Degrees MaximumGimbalPitch = Degrees{90.0};
-            double BallastPositionChangeSpeedPerSecond = 0.1;
-            double DepthTargetChangeSpeedMetersPerSecond = 0.25;
+            double BallastPositionChangeSpeedPerSecond = 0.25;
+            double DepthTargetChangeSpeedMetersPerSecond = 1;
         };
 
         Controller(

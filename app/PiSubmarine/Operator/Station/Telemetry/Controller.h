@@ -32,6 +32,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
     public:
         Controller(
             LampController& lampController,
+            MotorController& ballastMotorController,
             std::vector<std::reference_wrapper<MotorController>> motorControllers,
             BatteryController& batteryController,
             BallastController& ballastController,
@@ -50,6 +51,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
     private:
         void Tick(const std::chrono::nanoseconds& uptime, const std::chrono::nanoseconds& deltaTime) override;
         LampController& m_LampController;
+        MotorController& m_BallastMotorController;
         std::vector<std::reference_wrapper<MotorController>> m_MotorControllers;
         BatteryController& m_BatteryController;
         BallastController& m_BallastController;

@@ -16,6 +16,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
 {
     Controller::Controller(
         LampController& lampController,
+        MotorController& ballastMotorController,
         std::vector<std::reference_wrapper<MotorController>> motorControllers,
         BatteryController& batteryController,
         BallastController& ballastController,
@@ -27,6 +28,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         QObject* parent)
         : QObject(parent)
         , m_LampController(lampController)
+        , m_BallastMotorController(ballastMotorController)
         , m_MotorControllers(std::move(motorControllers))
         , m_BatteryController(batteryController)
         , m_BallastController(ballastController)
@@ -89,6 +91,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
         }
 
         m_LampController.Refresh();
+        m_BallastMotorController.Refresh();
         for (auto& motorController : m_MotorControllers)
         {
             static_cast<MotorController&>(motorController).Refresh();

@@ -40,6 +40,7 @@ namespace PiSubmarine::Operator::Station::Composition
         , m_BatterySource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::BatteryMain))
         , m_DepthSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::DepthMain))
         , m_LampSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::LampMain))
+        , m_BallastMotorSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::MotorBallast))
         , m_ProximitySource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::ProximityMain))
         , m_TimeSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::TimeMain))
         , m_VideoSource(m_Client, MakeChannelId(::PiSubmarine::Telemetry::Channels::Api::VideoMain))
@@ -47,6 +48,7 @@ namespace PiSubmarine::Operator::Station::Composition
         , m_BatteryProvider(m_BatterySource)
         , m_DepthProvider(m_DepthSource)
         , m_LampProvider(m_LampSource)
+        , m_BallastMotorProvider(m_BallastMotorSource)
         , m_ProximityProvider(m_ProximitySource)
         , m_TimeProvider(m_TimeSource)
         , m_VideoProvider(m_VideoSource)
@@ -92,6 +94,11 @@ namespace PiSubmarine::Operator::Station::Composition
     ::PiSubmarine::Lamp::Telemetry::Api::IProvider& RemoteTelemetry::GetLamp()
     {
         return m_LampProvider;
+    }
+
+    ::PiSubmarine::Motor::Telemetry::Api::IProvider& RemoteTelemetry::GetBallastMotor()
+    {
+        return m_BallastMotorProvider;
     }
 
     std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>> RemoteTelemetry::GetMotors()

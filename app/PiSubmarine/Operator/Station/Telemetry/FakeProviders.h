@@ -18,6 +18,7 @@ namespace PiSubmarine::Operator::Station::Telemetry
     {
         std::unique_ptr<::PiSubmarine::Ballast::Telemetry::Api::IProvider> Ballast;
         std::unique_ptr<::PiSubmarine::Lamp::Telemetry::Api::IProvider> Lamp;
+        std::unique_ptr<::PiSubmarine::Motor::Telemetry::Api::IProvider> BallastMotor;
         std::vector<std::unique_ptr<::PiSubmarine::Motor::Telemetry::Api::IProvider>> Motors;
         std::unique_ptr<::PiSubmarine::Battery::Telemetry::Api::IProvider> Battery;
         std::unique_ptr<::PiSubmarine::Depth::Telemetry::Api::IProvider> Depth;

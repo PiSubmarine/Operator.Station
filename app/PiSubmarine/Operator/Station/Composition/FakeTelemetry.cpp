@@ -33,6 +33,11 @@ namespace PiSubmarine::Operator::Station::Composition
         return *m_Providers.Lamp;
     }
 
+    ::PiSubmarine::Motor::Telemetry::Api::IProvider& FakeTelemetry::GetBallastMotor()
+    {
+        return *m_Providers.BallastMotor;
+    }
+
     std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>> FakeTelemetry::GetMotors()
     {
         return m_Motors;

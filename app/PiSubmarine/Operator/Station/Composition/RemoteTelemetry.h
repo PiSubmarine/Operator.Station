@@ -38,6 +38,7 @@ namespace PiSubmarine::Operator::Station::Composition
         [[nodiscard]] ::PiSubmarine::Battery::Telemetry::Api::IProvider& GetBattery() override;
         [[nodiscard]] ::PiSubmarine::Depth::Telemetry::Api::IProvider& GetDepth() override;
         [[nodiscard]] ::PiSubmarine::Lamp::Telemetry::Api::IProvider& GetLamp() override;
+        [[nodiscard]] ::PiSubmarine::Motor::Telemetry::Api::IProvider& GetBallastMotor() override;
         [[nodiscard]] std::vector<std::reference_wrapper<::PiSubmarine::Motor::Telemetry::Api::IProvider>>
         GetMotors() override;
         [[nodiscard]] ::PiSubmarine::Proximity::Telemetry::Api::IProvider& GetProximity() override;
@@ -57,6 +58,7 @@ namespace PiSubmarine::Operator::Station::Composition
         ::PiSubmarine::Telemetry::Client::Udp::Source m_BatterySource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_DepthSource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_LampSource;
+        ::PiSubmarine::Telemetry::Client::Udp::Source m_BallastMotorSource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_ProximitySource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_TimeSource;
         ::PiSubmarine::Telemetry::Client::Udp::Source m_VideoSource;
@@ -65,6 +67,7 @@ namespace PiSubmarine::Operator::Station::Composition
         ::PiSubmarine::Battery::Telemetry::Protobuf::Deserializer m_BatteryProvider;
         ::PiSubmarine::Depth::Telemetry::Protobuf::Deserializer m_DepthProvider;
         ::PiSubmarine::Lamp::Telemetry::Protobuf::Deserializer m_LampProvider;
+        ::PiSubmarine::Motor::Telemetry::Protobuf::Deserializer m_BallastMotorProvider;
         ::PiSubmarine::Proximity::Telemetry::Protobuf::Deserializer m_ProximityProvider;
         ::PiSubmarine::Time::Telemetry::Protobuf::Deserializer m_TimeProvider;
         ::PiSubmarine::Video::Telemetry::Protobuf::Deserializer m_VideoProvider;

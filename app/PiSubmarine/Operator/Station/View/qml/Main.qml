@@ -109,6 +109,12 @@ ApplicationWindow {
                 }
 
                 Loader {
+                    source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Ballast/BallastMotorPanel.qml"
+
+                    onLoaded: item.viewModel = ballastMotorTelemetryViewModel
+                }
+
+                Loader {
                     source: "qrc:/PiSubmarine/Operator/Station/Telemetry/View/Lamp/LampOverlayPanel.qml"
                 }
             }

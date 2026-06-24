@@ -108,8 +108,8 @@ namespace
     constexpr PiSubmarine::Degrees DefaultGimbalPitchChangeSpeed{45.0};
     constexpr PiSubmarine::Degrees DefaultMinimumGimbalPitch{-90.0};
     constexpr PiSubmarine::Degrees DefaultMaximumGimbalPitch{90.0};
-    constexpr double DefaultBallastPositionChangeSpeedPerSecond = 0.1;
-    constexpr double DefaultDepthTargetChangeSpeedMetersPerSecond = 0.25;
+    constexpr double DefaultBallastPositionChangeSpeedPerSecond = 0.25;
+    constexpr double DefaultDepthTargetChangeSpeedMetersPerSecond = 1;
     const std::vector<PiSubmarine::Operator::Station::Input::BindingDescriptor> DefaultInputBindings{
         {.Name = "Surge", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
         {.Name = "Yaw", .Type = PiSubmarine::Operator::Station::Input::BindingType::Axis},
@@ -417,6 +417,7 @@ int main(int argc, char* argv[])
     PiSubmarine::Operator::Station::Telemetry::View::Time::ViewModel timeTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Video::ViewModel videoTelemetryViewModel;
     PiSubmarine::Operator::Station::Telemetry::View::Battery::ViewModel batteryTelemetryViewModel;
+    PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel ballastMotorTelemetryViewModel("BDR", false);
 
     std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel>> motorTelemetryViewModels;
     std::vector<std::unique_ptr<PiSubmarine::Operator::Station::Telemetry::MotorController>> motorTelemetryControllers;
@@ -460,6 +461,7 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty("depthTelemetryViewModel", &depthTelemetryViewModel);
     engine.rootContext()->setContextProperty("inputBindingViewModel", &inputBindingViewModel);
     engine.rootContext()->setContextProperty("lampTelemetryViewModel", &lampTelemetryViewModel);
+    engine.rootContext()->setContextProperty("ballastMotorTelemetryViewModel", &ballastMotorTelemetryViewModel);
     engine.rootContext()->setContextProperty("motorTelemetryViewModels", motorTelemetryViewModelList);
     engine.rootContext()->setContextProperty("proximityTelemetryViewModel", &proximityTelemetryViewModel);
     engine.rootContext()->setContextProperty("timeTelemetryViewModel", &timeTelemetryViewModel);
@@ -623,6 +625,8 @@ int main(int argc, char* argv[])
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::DepthController>(telemetry->GetDepth());
     auto lampTelemetryController =
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::LampController>(telemetry->GetLamp());
+    auto ballastMotorTelemetryController =
+        std::make_unique<PiSubmarine::Operator::Station::Telemetry::MotorController>(telemetry->GetBallastMotor());
     auto proximityTelemetryController =
         std::make_unique<PiSubmarine::Operator::Station::Telemetry::ProximityController>(telemetry->GetProximity());
     auto timeTelemetryController =
@@ -640,6 +644,7 @@ int main(int argc, char* argv[])
 
     auto telemetryController = std::make_unique<PiSubmarine::Operator::Station::Telemetry::Controller>(
         *lampTelemetryController,
+        *ballastMotorTelemetryController,
         std::move(motorTelemetryControllerRefs),
         *batteryTelemetryController,
         *ballastTelemetryController,
@@ -752,6 +757,12 @@ int main(int argc, char* argv[])
         &PiSubmarine::Operator::Station::Telemetry::LampController::SnapshotChanged,
         &lampTelemetryViewModel,
         &PiSubmarine::Operator::Station::Telemetry::View::Lamp::ViewModel::SetSnapshot,
+        Qt::QueuedConnection);
+    QObject::connect(
+        ballastMotorTelemetryController.get(),
+        &PiSubmarine::Operator::Station::Telemetry::MotorController::SnapshotChanged,
+        &ballastMotorTelemetryViewModel,
+        &PiSubmarine::Operator::Station::Telemetry::View::Motor::ViewModel::SetSnapshot,
         Qt::QueuedConnection);
     for (std::size_t index = 0; index < motorTelemetryControllers.size(); ++index)
     {
@@ -1001,6 +1012,7 @@ int main(int argc, char* argv[])
     ballastTelemetryController->moveToThread(&controllerThread);
     depthTelemetryController->moveToThread(&controllerThread);
     lampTelemetryController->moveToThread(&controllerThread);
+    ballastMotorTelemetryController->moveToThread(&controllerThread);
     for (const auto& motorTelemetryController : motorTelemetryControllers)
     {
         motorTelemetryController->moveToThread(&controllerThread);
@@ -1055,6 +1067,7 @@ int main(int argc, char* argv[])
         DeleteLaterOnObjectThread(ballastTelemetryController);
         DeleteLaterOnObjectThread(depthTelemetryController);
         DeleteLaterOnObjectThread(lampTelemetryController);
+        DeleteLaterOnObjectThread(ballastMotorTelemetryController);
         for (auto& motorTelemetryController : motorTelemetryControllers)
         {
             DeleteLaterOnObjectThread(motorTelemetryController);
