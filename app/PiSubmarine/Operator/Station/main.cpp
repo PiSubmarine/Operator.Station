@@ -7,7 +7,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
-
+#include <cstdlib>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QGuiApplication>
@@ -275,6 +275,12 @@ int main(int argc, char* argv[])
 {
     Q_INIT_RESOURCE(qml);
 
+#ifdef PISUBMARINE_WIN32
+    _putenv_s("GRPC_DNS_RESOLVER", "native");
+#else
+    setenv("GRPC_DNS_RESOLVER", "native", 1);
+#endif
+
     QGuiApplication application(argc, argv);
     qRegisterMetaType<PiSubmarine::Operator::Station::Video::Status>("PiSubmarine::Operator::Station::Video::Status");
     qRegisterMetaType<PiSubmarine::Operator::Station::Input::BindingDevice>(
@@ -315,6 +321,7 @@ int main(int argc, char* argv[])
         "duration",
         "10ms"));
     parser.addOption(QCommandLineOption("video-bind", "Local RTP bind endpoint host:port.", "endpoint", "0.0.0.0:5005"));
+    parser.addOption(QCommandLineOption("video-subscription", "Local RTP bind endpoint host:port.", "endpoint", "0.0.0.0:5005"));
     parser.addOption(QCommandLineOption("telemetry-server", "Telemetry UDP server endpoint host:port.", "endpoint", "127.0.0.1:50053"));
     parser.process(application);
 
@@ -395,6 +402,19 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    const auto videoSubscriptionEndpoint = ParseEndpoint(parser.value("video-subscription"));
+    if (!videoSubscriptionEndpoint.has_value())
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Invalid --video-subscription value. Use host:port.");
+        return 1;
+    }
+
+    if (videoSubscriptionEndpoint->Port != videoBindEndpoint->Port)
+    {
+        SPDLOG_LOGGER_CRITICAL(logger, "Video subscription port must match video bind port");
+        return 1;
+    }
+
     if (!logger || !PiSubmarine::Operator::Station::Video::GstreamerPipeline::EnsureGstreamerInitialized(logger))
     {
         return 1;
@@ -404,8 +424,8 @@ int main(int argc, char* argv[])
     PiSubmarine::Operator::Station::Video::View::StatusOverlayViewModel videoStatusOverlayViewModel;
     videoViewModel.SetReceiveBindAddress(QString::fromStdString(videoBindEndpoint->Address));
     videoViewModel.SetReceivePort(videoBindEndpoint->Port);
-    videoViewModel.SetSubscriptionHost("127.0.0.1");
-    videoViewModel.SetSubscriptionPort(videoBindEndpoint->Port);
+    videoViewModel.SetSubscriptionHost(QString::fromStdString(videoSubscriptionEndpoint->Address));
+    videoViewModel.SetSubscriptionPort(videoSubscriptionEndpoint->Port);
 
     PiSubmarine::Operator::Station::Control::View::ViewModel controlViewModel;
     PiSubmarine::Operator::Station::Control::View::StatusViewModel controlStatusViewModel;

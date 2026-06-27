@@ -94,7 +94,7 @@ namespace PiSubmarine::Operator::Station::Control
         bool m_HasPublishedGimbalIntent = false;
         bool m_DesiredHoldPosition = false;
         VerticalMode m_VerticalMode = VerticalMode::SetBallastPosition;
-        double m_DesiredBallastPosition = 0.5;
+        double m_DesiredBallastPosition = 0.0;
         double m_DesiredDepthTargetMeters = 0.0;
         bool m_LastGimbalCenterKeyState = false;
         bool m_HasGimbalCenterKeySnapshot = false;

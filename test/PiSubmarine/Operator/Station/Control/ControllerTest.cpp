@@ -132,7 +132,7 @@ namespace PiSubmarine::Operator::Station::Control
         const auto* ballastPosition =
             submittedCommand.LastCommand->VerticalControl.TryGet<::PiSubmarine::Control::Vertical::Api::Command::SetBallastPosition>();
         ASSERT_NE(ballastPosition, nullptr);
-        EXPECT_DOUBLE_EQ(static_cast<double>(ballastPosition->Position), 0.6);
+        EXPECT_DOUBLE_EQ(static_cast<double>(ballastPosition->Position), 0.1);
     }
 
     TEST(ControllerTest, BallastAxisChangesDepthTargetInDepthMode)

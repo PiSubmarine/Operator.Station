@@ -85,7 +85,7 @@ namespace PiSubmarine::Operator::Station::Control::View
         double m_GimbalPitchDegrees = 0.0;
         bool m_HoldPositionMode = false;
         int m_VerticalMode = 1;
-        double m_BallastPosition = 0.5;
+        double m_BallastPosition = 0.0;
         double m_DepthTargetMeters = 0.0;
     };
 }

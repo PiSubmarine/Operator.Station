@@ -11,6 +11,7 @@
 #include "PiSubmarine/Control/Horizontal/Api/Command.h"
 #include "PiSubmarine/Control/Lamp/Api/Command.h"
 #include "PiSubmarine/Control/Vertical/Api/Command.h"
+#include "PiSubmarine/Error/Api/ToStringView.h"
 #include "PiSubmarine/SignedNormalizedFraction.h"
 
 namespace PiSubmarine::Operator::Station::Control
@@ -223,7 +224,23 @@ namespace PiSubmarine::Operator::Station::Control
         const auto submitResult = m_Sink.Submit(command);
         if (!submitResult.has_value())
         {
-            SPDLOG_LOGGER_WARN(m_Logger, "Failed to submit operator intent");
+            const auto& error = submitResult.error();
+            if (error.HasCause())
+            {
+                SPDLOG_LOGGER_WARN(
+                    m_Logger,
+                    "Failed to submit operator intent: {} ({}: {})",
+                    ::PiSubmarine::Error::Api::ToStringView(error.Condition),
+                    error.Cause.value(),
+                    error.Cause.message());
+            }
+            else
+            {
+                SPDLOG_LOGGER_WARN(
+                    m_Logger,
+                    "Failed to submit operator intent: {}",
+                    ::PiSubmarine::Error::Api::ToStringView(error.Condition));
+            }
         }
     }
 
